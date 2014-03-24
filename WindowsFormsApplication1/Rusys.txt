@@ -1,0 +1,18 @@
+﻿OAK Concerto, Natur: 50-80, Baltic1.5: 20-50!
+OAK Concertino, Natur: 80, Baltic1: 20!
+OAK Diva, Natur: 80, Baltic1.5: 20!
+OAK Finale, Natur: 50, Baltic1.5:10, Baltic2: 10, Rustic1: 30!
+OAK Vivace, Baltic1.5: 50, Structur: 50!
+OAK American, Rustic1: 10, Structur: 70, Kinivarpa: 20!
+OAK Sport, Natur: 70, Baltic1.5: 30!
+OAK Techno(3.8), Natur: 20, Baltic1: 20, Baltic1.5: 20, Baltic2: 20, Rustic1: 20!
+OAK Techno(3), Natur: 16.6, Baltic1: 16.6, Baltic1.5: 16.6, Baltic2: 16.6, Rustic1: 16.6, Structur: 16.6!
+OAK Sarek, Natur: 60, Baltic1: 40!
+OAK Abisko, Baltic1: 5, Baltic1.5: 30, Rustic1: 65!
+OAK Dovre, Baltic1.5: 50, Baltic2: 50!
+OAK Metropole, Natur: 60, Baltic1: 40!
+OAK City, Natur: 50-80, Baltic1.5: 10-25, Baltic2: 10-25!
+OAK Boulevard, Natur: 60, Baltic1.5: 20, Rustic1: 20!
+OAK Town, Baltic1.5: 15, Rustic1: 85!
+OAK Town-Bolist, Natur: 16.6-20, Baltic1: 16.6-20, Baltic1.5: 16.6-20, Rustic1: 40-50!
+OAK Cottage, Baltic1.5: 50, Structur: 50!
