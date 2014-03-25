@@ -122,9 +122,9 @@ namespace WindowsFormsApplication1
                 }
             }
         }
-        private void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e) // BUG FIX schemos reset!!!!!!
         {
-            richTextBox2.Text = "";
+            richTextBox2.Text = ""; 
             Reset();
             ReadTextBox();
             AtrinktiSchemas();
@@ -242,9 +242,6 @@ namespace WindowsFormsApplication1
                         if (pradzia <= ApvalintasSantykis && pabaiga >= ApvalintasSantykis)
                         {
                             richTextBox2.Text += "Optimaliausias dizainas:  " + duom.vardas[i] + "\n";
-                            AtrinktiTipai.Clear();
-                            AtrinktuSumos.Clear();
-                            RusisAtrinkimui.Clear();
                             return i;
                         }
                         else
@@ -262,9 +259,6 @@ namespace WindowsFormsApplication1
             {
                 richTextBox2.Text += "Optimaliausias dizainas:  " + duom.vardas[mn] + "\n";
             }
-            AtrinktiTipai.Clear();
-            AtrinktuSumos.Clear();
-            RusisAtrinkimui.Clear();
             return mn;
         }
         private void AtrinktiSchemas()
@@ -295,13 +289,13 @@ namespace WindowsFormsApplication1
         {
             richTextBox2.Text += "\n" + "Galutinis rezultatas:" + "\n";
             Randomiser.sablonas = sabl;
-            NykstukuFabrikas(1000000);
+            NykstukuFabrikas(100000);
             Testing();
-            //for (int i = 0; i < 1000; i++) // 500000
-            //{
-            //    CloneBest(100);
-            //    Testing();
-            //}
+            for (int i = 0; i < 100000; i++) // 500000
+            {
+               //CloneBest(100);
+               Testing();
+            }
             Print();
         }
         private void NykstukuFabrikas(int kiekis)
@@ -349,15 +343,13 @@ namespace WindowsFormsApplication1
                 RandomList.random.Add(Randomiser);
                 //richTextBox2.Text += "\n";
             }
-            viso.Clear();
         }
         private void Testing()
         {
-            RandomElements rand = new RandomElements();
+            List<int> viso = new List<int> { };
             for (int i = 0; i < RandomList.random.Count; i++)
             {
-                Boolean deti = true;
-                List<int> viso = new List<int> { };
+                viso = new List<int> { };
                 for (int get = 0; get < visoP.kiekis.Count; get++)
                 {
                     viso.Add(visoP.kiekis[get]);
@@ -374,30 +366,33 @@ namespace WindowsFormsApplication1
                 int suma = 0;
                 for (int sum = 0; sum < viso.Count; sum++)
                 {
-                    if (viso[sum] < 0)
-                    {
-                        deti = false;
-                    }
                     suma += Math.Abs(viso[sum]);
                 }
                 RandomList.random[i].liekana = suma;
-                if (deti == true)
+            }
+
+            RandomElements rand = new RandomElements();
+            List<int> k = new List<int> { };
+            for (int i = 0; i < Math.Min(RandomList.random.Count, 5); i++)
+            {
+                int min = 999999999; int mn = -1;
+                for (int j = 0; j < RandomList.random.Count; j++)
                 {
-                    rand.random.Add(RandomList.random[i]);
+                    if (RandomList.random[j].liekana < min && k.IndexOf(j) == -1)
+                    {
+                        min = RandomList.random[j].liekana;
+                        mn = j;
+                    }
                 }
+                k.Add(mn);
+            }
+            for (int i = 0; i < k.Count; i++)
+            {
+                rand.random.Add(RandomList.random[k[i]]);
             }
             RandomList = rand;
-            RandomList.SortList();
-            if (RandomList.random.Count > 5)
-            {
-                RandomList.random.RemoveRange(5, RandomList.random.Count - 5);
-            }
-            else
-            {
-                richTextBox2.Text += "FAIL";
-            }
         }
-        private void CloneBest(int kiekis) 
+        private void CloneBest(int kiekis) // PATAISYTI kaip GAMINIMA
         {
             kiekis -= 5;
             kiekis = Convert.ToInt32(Math.Floor(Convert.ToDouble(kiekis) / Convert.ToDouble(RandomList.random.Count)));
@@ -470,11 +465,11 @@ public class RandomiserClass
 public class RandomElements
 {
     public List<RandomiserClass> random = new List<RandomiserClass> { };
-    public void SortList()
-    {
-        random.Sort(delegate(RandomiserClass a, RandomiserClass b)
-        {
-            return a.liekana.CompareTo(b.liekana);
-        });
-    }
+    //public void SortList()
+    //{
+    //    random.Sort(delegate(RandomiserClass a, RandomiserClass b)
+    //    {
+    //        return a.liekana.CompareTo(b.liekana);
+    //    });
+    //}
 }
