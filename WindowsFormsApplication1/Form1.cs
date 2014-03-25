@@ -18,7 +18,6 @@ namespace WindowsFormsApplication1
         Uzklausa visoP = new Uzklausa();
         RandomiserClass Randomiser = new RandomiserClass();
         RandomElements RandomList = new RandomElements();
-        List<int> minimumai = new List<int> { };
         int paskutinisNr = -1;
         int viso = 0;
         public Form1()
@@ -79,6 +78,7 @@ namespace WindowsFormsApplication1
                 }
                 duom.Rus.Add(duomenys);
             }
+            file.Close();
         }
         private void GetSablonuDuomenys()
         {
@@ -96,6 +96,7 @@ namespace WindowsFormsApplication1
                 }
                 sabl.SablonoElem.Add(elem);
             }
+            file.Close();
         }
         private void GetJuosteliuIlgiai()
         {
@@ -123,9 +124,8 @@ namespace WindowsFormsApplication1
         }
         private void button1_Click(object sender, EventArgs e)
         {
+            richTextBox2.Text = "";
             Reset();
-            richTextBox2.Text = "Uzsakymas:" + "\n" + richTextBox1.Text + "\n" + "\n";
-            richTextBox2.Text += "Rezultatas:" + "\n";
             ReadTextBox();
             AtrinktiSchemas();
             StartEvo();
@@ -242,6 +242,9 @@ namespace WindowsFormsApplication1
                         if (pradzia <= ApvalintasSantykis && pabaiga >= ApvalintasSantykis)
                         {
                             richTextBox2.Text += "Optimaliausias dizainas:  " + duom.vardas[i] + "\n";
+                            AtrinktiTipai.Clear();
+                            AtrinktuSumos.Clear();
+                            RusisAtrinkimui.Clear();
                             return i;
                         }
                         else
@@ -259,6 +262,9 @@ namespace WindowsFormsApplication1
             {
                 richTextBox2.Text += "Optimaliausias dizainas:  " + duom.vardas[mn] + "\n";
             }
+            AtrinktiTipai.Clear();
+            AtrinktuSumos.Clear();
+            RusisAtrinkimui.Clear();
             return mn;
         }
         private void AtrinktiSchemas()
@@ -289,47 +295,61 @@ namespace WindowsFormsApplication1
         {
             richTextBox2.Text += "\n" + "Galutinis rezultatas:" + "\n";
             Randomiser.sablonas = sabl;
-            NykstukuFabrikas(100000);
+            NykstukuFabrikas(1000000);
             Testing();
-            for (int i = 0; i < 100; i++)
-            {
-                CloneBest(10000);
-                Testing();
-            }
+            //for (int i = 0; i < 1000; i++) // 500000
+            //{
+            //    CloneBest(100);
+            //    Testing();
+            //}
             Print();
         }
         private void NykstukuFabrikas(int kiekis)
         {
             Random r = new Random();
-            richTextBox2.Text +="Viso juosteliu: " + viso + " " + "Rastu sablonu skaicius: " +  Randomiser.sablonas.SablonoNr.Count + "\n";
-            for (int i = 0; i < Randomiser.sablonas.SablonoNr.Count; i++)
+            List<int> viso = new List<int> { };
+            for (int kiek = 0; kiek < kiekis; kiek++)
             {
-                int min = 99999;
-                for (int j = 0; j < Randomiser.sablonas.SablonoElem[i].JuostIlgis.Count; j++)
+                viso = new List<int> { };
+                for (int i = 0; i < visoP.kiekis.Count; i++)
                 {
-                    int index = visoP.ilgis.IndexOf(Randomiser.sablonas.SablonoElem[i].JuostIlgis[j]);
-                    if (index != -1)
+                    viso.Add(visoP.kiekis[i]);
+                }
+                Randomiser = new RandomiserClass();
+                Randomiser.sablonas = sabl;
+                for (int i = 0; i < Randomiser.sablonas.SablonoNr.Count; i++)
+                {
+                    int min = 99999;
+                    for (int j = 0; j < Randomiser.sablonas.SablonoElem[i].JuostIlgis.Count; j++)
                     {
-                        int dalyba = Convert.ToInt32(Math.Floor(Convert.ToDouble(visoP.kiekis[index]) / Convert.ToDouble(Randomiser.sablonas.SablonoElem[i].Kiekis[j])));
-                        if (dalyba < min)
+                        int index = visoP.ilgis.IndexOf(Randomiser.sablonas.SablonoElem[i].JuostIlgis[j]);
+                        if (index != -1)
                         {
-                            min = dalyba;
+                            int dalyba = Convert.ToInt32(Math.Floor(Convert.ToDouble(viso[index]) / Convert.ToDouble(Randomiser.sablonas.SablonoElem[i].Kiekis[j])));
+                            if (dalyba < min)
+                            {
+                                min = dalyba;
+                            }
+                        }
+                    }
+                    int atimti = r.Next(0, min);
+                    Randomiser.kiekis.Add(atimti);
+                    for (int j = 0; j < Randomiser.sablonas.SablonoElem[i].JuostIlgis.Count; j++)
+                    {
+                        //richTextBox2.Text += Randomiser.sablonas.SablonoNr[i] + ") ";
+                        int index = visoP.ilgis.IndexOf(Randomiser.sablonas.SablonoElem[i].JuostIlgis[j]);
+                        if (index != -1)
+                        {
+                            //richTextBox2.Text += viso[index] + " - " + Randomiser.sablonas.SablonoElem[i].Kiekis[j] + " * " + atimti + " = "; // atima tik viena reikia visus
+                            viso[index] -= Randomiser.sablonas.SablonoElem[i].Kiekis[j] * atimti;
+                            //richTextBox2.Text += viso[index] + "\n";
                         }
                     }
                 }
-                minimumai.Add(min);
-                richTextBox2.Text += "Schemos " + Randomiser.sablonas.SablonoNr[i] + " minimumas: " + min + "\n";
-            }
-            for (int kiek = 0; kiek < kiekis; kiek++)
-            {
-                Randomiser = new RandomiserClass();
-                Randomiser.sablonas = sabl;
-                for (int add = 0; add < Randomiser.sablonas.SablonoNr.Count; add++)
-                {
-                    Randomiser.kiekis.Add(r.Next(0, minimumai[add]));
-                }
                 RandomList.random.Add(Randomiser);
+                //richTextBox2.Text += "\n";
             }
+            viso.Clear();
         }
         private void Testing()
         {
@@ -354,7 +374,6 @@ namespace WindowsFormsApplication1
                 int suma = 0;
                 for (int sum = 0; sum < viso.Count; sum++)
                 {
-                    RandomList.random[i].sumos.Add(viso[sum]);
                     if (viso[sum] < 0)
                     {
                         deti = false;
@@ -369,10 +388,19 @@ namespace WindowsFormsApplication1
             }
             RandomList = rand;
             RandomList.SortList();
-            RandomList.random.RemoveRange(5, RandomList.random.Count - 5);
+            if (RandomList.random.Count > 5)
+            {
+                RandomList.random.RemoveRange(5, RandomList.random.Count - 5);
+            }
+            else
+            {
+                richTextBox2.Text += "FAIL";
+            }
         }
-        private void CloneBest(int kiekis)
+        private void CloneBest(int kiekis) 
         {
+            kiekis -= 5;
+            kiekis = Convert.ToInt32(Math.Floor(Convert.ToDouble(kiekis) / Convert.ToDouble(RandomList.random.Count)));
             Random r = new Random();
             RandomElements biggerRandom = new RandomElements();
             for (int i = 0; i < RandomList.random.Count; i++)
@@ -382,9 +410,9 @@ namespace WindowsFormsApplication1
                 {
                     Randomiser = new RandomiserClass();
                     Randomiser.sablonas = sabl;
-                    for (int add = 0; add < RandomList.random[i].sablonas.SablonoNr.Count; add++) // Randomiser.sablonas.SablonoNr.Count
+                    for (int add = 0; add < RandomList.random[i].sablonas.SablonoNr.Count; add++)
                     {
-                        Randomiser.kiekis.Add(RandomList.random[i].kiekis[add] + r.Next(-100, 100));
+                        Randomiser.kiekis.Add(RandomList.random[i].kiekis[add] + r.Next(-10, 10));
                     }
                     biggerRandom.random.Add(Randomiser);
                 }    
@@ -438,7 +466,6 @@ public class RandomiserClass
     public Sablonai sablonas = new Sablonai();
     public List<int> kiekis = new List<int> { };
     public int liekana;
-    public List<int> sumos = new List<int> { };
 }
 public class RandomElements
 {
