@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace WindowsFormsApplication1
 {
@@ -29,7 +30,9 @@ namespace WindowsFormsApplication1
         }
         private void GetRusisDuomenys()
         {
-            System.IO.StreamReader file = new System.IO.StreamReader("C:\\Users\\Rolandas\\Desktop\\Apps\\WindowsFormsApplication1\\WindowsFormsApplication1\\Rusys.txt");
+            string location = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase) + "\\Rusys.txt";
+            location = location.Substring(6);
+            System.IO.StreamReader file = new System.IO.StreamReader(location);//"C:\\Users\\Rolandas\\Desktop\\Apps\\WindowsFormsApplication1\\WindowsFormsApplication1\\Rusys.txt");
             while (file.EndOfStream != true)
             {
                 int galas = 0;
@@ -83,7 +86,9 @@ namespace WindowsFormsApplication1
         private void GetSablonuDuomenys()
         {
             sabl = new Sablonai();
-            System.IO.StreamReader file = new System.IO.StreamReader("C:\\Users\\Rolandas\\Desktop\\Apps\\WindowsFormsApplication1\\WindowsFormsApplication1\\Sablonai.txt");
+            string location = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase) + "\\Sablonai.txt";
+            location = location.Substring(6);
+            System.IO.StreamReader file = new System.IO.StreamReader(location);//"C:\\Users\\Rolandas\\Desktop\\Apps\\WindowsFormsApplication1\\WindowsFormsApplication1\\Sablonai.txt");
             while (file.EndOfStream != true)
             {
                 elem = new Elementas();
@@ -125,12 +130,64 @@ namespace WindowsFormsApplication1
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            richTextBox2.Text = ""; 
-            Reset();
-            GetSablonuDuomenys();
-            ReadTextBox();
-            AtrinktiSchemas();
-            StartEvo();
+            if (richTextBox1.Text == "")
+            {
+                richTextBox2.Text = "Iveskite uzsakyma.";
+            }
+            else
+            {
+                button1.Enabled = false;
+                richTextBox2.Text = "";
+                Reset();
+                GetSablonuDuomenys();
+                ReadTextBox();
+                AtrinktiSchemas();
+
+                BackgroundWorker bw = new BackgroundWorker();
+                bw.WorkerSupportsCancellation = true;
+                bw.WorkerReportsProgress = true;
+                bw.DoWork += new DoWorkEventHandler(bw_DoWork);
+                bw.ProgressChanged += new ProgressChangedEventHandler(bw_ProgressChanged);
+                bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
+                if (bw.IsBusy != true)
+                {
+                    bw.RunWorkerAsync();
+                }
+            }
+        }
+        private void bw_DoWork(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker worker = sender as BackgroundWorker;
+            RandomElements RandomListFinal = new RandomElements();
+            Randomiser.sablonas = sabl;
+            for (int kartojimas = 0; kartojimas < int.Parse(textBox2.Text); kartojimas++)
+            {
+                worker.ReportProgress(kartojimas);
+                RandomList = new RandomElements();
+                NykstukuFabrikas(100000);
+                Testing();
+                for (int i = 0; i < 250; i++)
+                {
+                    CloneBest(100);
+                    Testing();
+                }
+                for (int i = 0; i < RandomList.random.Count; i++)
+                {
+                    RandomListFinal.random.Add(RandomList.random[i]);
+                }
+            }
+            RandomList = RandomListFinal;
+            Testing();
+        }
+        private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            int kiek = e.ProgressPercentage + 1;
+            label3.Text = "Pradetu ciklu skaicius: " + kiek + " / " + int.Parse(textBox2.Text);
+        }
+        private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            Print();
+            button1.Enabled = true;
         }
         private void Reset()
         {
@@ -175,7 +232,7 @@ namespace WindowsFormsApplication1
         }
         private int ReadTextBox()
         {
-            string[] text = richTextBox1.Text.Split('\n');
+            string[] text = richTextBox1.Text.Split('\n'); // sugaudyti exceptions jeigu blogai ivede.
             for (int i = 0; i < text.Length; i++)
             {
                 string[] eilute = text[i].Split();
@@ -184,7 +241,6 @@ namespace WindowsFormsApplication1
                 problem.kiekis.Add(int.Parse(eilute[2]));
             }
             int NR = RastiTinkamiausiaRusi();
-            richTextBox2.Text += "Dizaino numeris: "+ NR + "\n";
             return NR;
         }
         private int RastiTinkamiausiaRusi()
@@ -286,19 +342,6 @@ namespace WindowsFormsApplication1
             }
             richTextBox2.Text += "\n";
             sabl = sablonaiBeta;
-        }
-        private void StartEvo()
-        {
-            richTextBox2.Text += "\n" + "Galutinis rezultatas:" + "\n";
-            Randomiser.sablonas = sabl;
-            NykstukuFabrikas(100000);
-            Testing();
-            for (int i = 0; i < 250; i++)
-            {
-                CloneBest(100);
-                Testing();
-            }
-            Print();
         }
         private void NykstukuFabrikas(int kiekis)
         {
@@ -456,14 +499,14 @@ namespace WindowsFormsApplication1
         }
         private void Print()
         {
-            richTextBox2.Text += "\n" + "Atsakymai ir ju liekanos: " + "\n";
-            for (int i = 0; i < RandomList.random.Count; i++)
+            richTextBox2.Text += "Atsakymas: " + "\n";
+            for (int i = 0; i < 1; i++) // RandomList.random.Count
             {
+                richTextBox2.Text += "Liekana isskirscius po sablonus: " + RandomList.random[i].liekana + "\n";
                 for(int j= 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
                 {
-                    richTextBox2.Text += RandomList.random[i].sablonas.SablonoNr[j] + ": " + RandomList.random[i].kiekis[j] + "\n";
+                    richTextBox2.Text += "Sablonas " + RandomList.random[i].sablonas.SablonoNr[j] + " panaudotas " + RandomList.random[i].kiekis[j] + "   kartu." +  "\n";
                 }
-                richTextBox2.Text += "Liekana: " + RandomList.random[i].liekana + "\n";
             }
         }
     }
