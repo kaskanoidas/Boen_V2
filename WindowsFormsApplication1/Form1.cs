@@ -153,7 +153,30 @@ namespace WindowsFormsApplication1
                 {
                     bw.RunWorkerAsync();
                 }
+                //test();
             }
+        }
+        private void test()
+        {
+            RandomElements RandomListFinal = new RandomElements();
+            Randomiser.sablonas = sabl;
+            for (int kartojimas = 0; kartojimas < int.Parse(textBox2.Text); kartojimas++)
+            {
+                RandomList = new RandomElements();
+                NykstukuFabrikas(100000); // 100000
+                Testing();
+                for (int i = 0; i < 250; i++)
+                {
+                    CloneBest(100);
+                    Testing();
+                }
+                for (int i = 0; i < RandomList.random.Count; i++)
+                {
+                    RandomListFinal.random.Add(RandomList.random[i]);
+                }
+            }
+            RandomList = RandomListFinal;
+            Testing();
         }
         private void bw_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -164,7 +187,7 @@ namespace WindowsFormsApplication1
             {
                 worker.ReportProgress(kartojimas);
                 RandomList = new RandomElements();
-                NykstukuFabrikas(100000);
+                NykstukuFabrikas(100000); // 100000
                 Testing();
                 for (int i = 0; i < 250; i++)
                 {
@@ -371,7 +394,7 @@ namespace WindowsFormsApplication1
                             }
                         }
                     }
-                    int atimti = r.Next(0, min);
+                    int atimti = r.Next(0, min + 1);
                     Randomiser.kiekis.Add(atimti);
                     for (int j = 0; j < Randomiser.sablonas.SablonoElem[i].JuostIlgis.Count; j++)
                     {
@@ -387,9 +410,13 @@ namespace WindowsFormsApplication1
         }
         private void Testing()
         {
+            RandomElements rand = new RandomElements();
             List<int> viso = new List<int> { };
+            Boolean virsNulio = true;
             for (int i = 0; i < RandomList.random.Count; i++)
             {
+                virsNulio = true;
+                RandomList.random[i].suma.Clear();
                 viso = new List<int> { };
                 for (int get = 0; get < visoP.kiekis.Count; get++)
                 {
@@ -407,13 +434,22 @@ namespace WindowsFormsApplication1
                 int suma = 0;
                 for (int sum = 0; sum < viso.Count; sum++)
                 {
+                    if (viso[sum] < 0)
+                    {
+                        virsNulio = false;
+                    }
                     RandomList.random[i].suma.Add(viso[sum]);
                     RandomList.random[i].ilgis.Add(visoP.ilgis[sum]);
                     suma += Math.Abs(viso[sum]);
                 }
                 RandomList.random[i].liekana = suma;
+                if (virsNulio == true)
+                {
+                    rand.random.Add(RandomList.random[i]);
+                }
             }
-            RandomElements rand = new RandomElements();
+            RandomList.random = rand.random;
+            rand = new RandomElements();
             List<int> k = new List<int> { };
             for (int i = 0; i < Math.Min(RandomList.random.Count, 5); i++)
             {
@@ -459,7 +495,7 @@ namespace WindowsFormsApplication1
                         for (int h = 0; h < Randomiser.sablonas.SablonoElem[j].Kiekis.Count; h++)
                         {
                             int plius = 0;
-                            if (Randomiser.kiekis[j] > 2) 
+                            if (Randomiser.kiekis[j] > 1) 
                             {
                                 plius = r.Next(1, 2);
                             }
@@ -469,6 +505,7 @@ namespace WindowsFormsApplication1
                             Randomiser.kiekis[j] -= plius;
                         }
                     }
+                    //------------------------------------------------------
                     for (int j = 0; j < Randomiser.sablonas.SablonoNr.Count; j++)
                     {
                         int min = 99999;
@@ -484,13 +521,20 @@ namespace WindowsFormsApplication1
                                 }
                             }
                         }
-                        int atm = r.Next(0, min);
-                        for (int h = 0; h < Randomiser.sablonas.SablonoElem[j].Kiekis.Count; h++)
+                        int atm = 0;
+                        if (min > 0)
+                        {
+                            atm = r.Next(0, min + 1);
+                        }
+                        // add
+                        for (int h = 0; h < Randomiser.sablonas.SablonoElem[j].JuostIlgis.Count; h++) // -5 visada (vienu paima per daug)
                         {
                             int atimti = Randomiser.sablonas.SablonoElem[j].Kiekis[h] * atm;
                             int index = visoP.ilgis.IndexOf(Randomiser.sablonas.SablonoElem[j].JuostIlgis[h]);
-                            Randomiser.suma[index] -= atimti;
-                            Randomiser.kiekis[j] += atm;
+                            if (Randomiser.suma[index] - atimti >= 0)
+                            {
+                                Randomiser.suma[index] -= atimti;
+                                Randomiser.kiekis[j] += atm;                            }
                         }
                     }
                     RandomList.random.Add(Randomiser);
@@ -503,9 +547,14 @@ namespace WindowsFormsApplication1
             for (int i = 0; i < 1; i++) // RandomList.random.Count
             {
                 richTextBox2.Text += "Liekana isskirscius po sablonus: " + RandomList.random[i].liekana + "\n";
-                for(int j= 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
+                for (int j = 0; j < RandomList.random[i].suma.Count; j++)
                 {
-                    richTextBox2.Text += "Sablonas " + RandomList.random[i].sablonas.SablonoNr[j] + " panaudotas " + RandomList.random[i].kiekis[j] + "   kartu." +  "\n";
+                    richTextBox2.Text += RandomList.random[i].ilgis[j] + "= " + RandomList.random[i].suma[j] + ";  ";
+                }
+                richTextBox2.Text += "\n";
+                for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
+                {
+                    richTextBox2.Text += "Sablonas " + RandomList.random[i].sablonas.SablonoNr[j] + " panaudotas " + RandomList.random[i].kiekis[j] + "   kartu." + "\n";
                 }
             }
         }
