@@ -355,9 +355,9 @@ namespace WindowsFormsApplication1
         private void bw_DoWork(object sender, DoWorkEventArgs e) // CALC-MAIN-->START
         {
             BackgroundWorker worker = sender as BackgroundWorker;
-            int t = 100; int c = t - 1; int k = 20; 
+            int t = 10; int c = t - 1; int k = 50; // 10 ir 20
             int kiekis = k * sabl.SablonoNr.Count;
-            int kiekLiko = 2000; int kiek = kiekLiko; int SUMA = 0; // 1000
+            int kiekLiko = 1000; int kiek = kiekLiko; int SUMA = 0; // 1000
             worker.ReportProgress(SUMA);
             NykstukuFabrikas(kiekis);
             Testing(t);
@@ -532,7 +532,7 @@ namespace WindowsFormsApplication1
 
                     for (int j = 0; j < Randomiser.sablonas.SablonoElem.Count; j++)  // Take out.
                     {
-                        int pp = r.Next(1, 10); // 10
+                        int pp = r.Next(10, 20); // 10
                         int KiekNaikinti = Convert.ToInt32(Math.Floor(Convert.ToDouble(Randomiser.kiekis[j]) / pp));
                         Randomiser.kiekis[j] -= KiekNaikinti;
                         for (int h = 0; h < Randomiser.sablonas.SablonoElem[j].Kiekis.Count; h++)
