@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Threading;
+using Combinatorics.Collections;
 
 namespace WindowsFormsApplication1
 {
@@ -194,6 +195,7 @@ namespace WindowsFormsApplication1
                 if (nr != -1 && nr!= -2)
                 {
                     AtrinktiSchemas();
+                    AtrinktiTinkamusVariantus(nr);
                     BackgroundWorker bw = new BackgroundWorker();
                     bw.WorkerSupportsCancellation = true;
                     bw.WorkerReportsProgress = true;
@@ -204,7 +206,6 @@ namespace WindowsFormsApplication1
                     {
                         bw.RunWorkerAsync();
                     }
-                    //test();
                 }
                 else if (nr == -2)
                 {
@@ -350,6 +351,86 @@ namespace WindowsFormsApplication1
                 }
             }
             richTextBox2.Text += "\n";
+        }
+        private void AtrinktiTinkamusVariantus(int parketoRusis) // KVIESTI KurtiVariantus
+        {
+            for (int i = 0; i < sabl.SablonoNr.Count; i++)
+            {
+                KurtiVariantus(i);
+            }
+        }
+        private void KurtiVariantus(int SablonoNr) // PAKEISTI TIK PVZ
+        {
+            string location = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase) + "\\SablonaiNew.txt";
+            location = location.Substring(6);
+            System.IO.StreamWriter file = new System.IO.StreamWriter(location);
+            int[] inputSet = { 1 }; // 20x
+            int kiekis = 3; // 3
+            Combinations<int> combinations = new Combinations<int>(inputSet, kiekis, GenerateOption.WithRepetition);
+            file.WriteLine("Kiekis 1: " + combinations.Count); // console
+
+            int[] inputSet2 = { 1, 2 }; // 40x
+            int kiekis2 = 6; // 6
+            Combinations<int> combinations2 = new Combinations<int>(inputSet2, kiekis2, GenerateOption.WithRepetition);
+            file.WriteLine("Kiekis 2: " + combinations2.Count);
+
+            int[] inputSet3 = { 1, 2 }; // 60x
+            int kiekis3 = 6; // 6
+            Combinations<int> combinations3 = new Combinations<int>(inputSet3, kiekis3, GenerateOption.WithRepetition);
+            file.WriteLine("Kiekis 3: " + combinations3.Count);
+
+            file.WriteLine("Bendras kiekis: " + combinations.Count * combinations2.Count * combinations3.Count);
+            for (int kiek = 0; kiek < 1; kiek++)
+            {
+                foreach (IList<int> v in combinations)
+                {
+                    foreach (IList<int> v2 in combinations2)
+                    {
+                        foreach (IList<int> v3 in combinations3)
+                        {
+                            for (int i = 0; i < kiekis; i++)
+                            {
+                                file.Write(v[i]);
+                                if (i != kiekis - 1)
+                                {
+                                    file.Write(" ");
+                                }
+                                else
+                                {
+                                    file.Write(" | ");
+                                }
+                            }
+                            for (int j = 0; j < kiekis2; j++)
+                            {
+                                file.Write(v2[j]);
+                                if (j != kiekis2 - 1)
+                                {
+                                    file.Write(" ");
+                                }
+                                else
+                                {
+                                    file.Write(" | ");
+                                }
+                            }
+                            for (int h = 0; h < kiekis3; h++)
+                            {
+                                file.Write(v3[h]);
+                                if (h != kiekis3 - 1)
+                                {
+                                    file.Write(" ");
+                                }
+                                else
+                                {
+                                    file.Write(Environment.NewLine);
+                                }
+                            }
+                        }
+                        file.Write(Environment.NewLine);
+                    }
+                    file.Write(Environment.NewLine + Environment.NewLine);
+                }
+            }
+            file.Close();
         }
         // PREP WORK END        // CALC-MAIN
         private void bw_DoWork(object sender, DoWorkEventArgs e) // CALC-MAIN-->START
