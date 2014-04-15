@@ -22,6 +22,12 @@ namespace WindowsFormsApplication1
         RandomiserClass Randomiser = new RandomiserClass();
         RandomElements RandomList = new RandomElements();
         int paskutinisNr = -1;
+        List<string> AtrinktiTipai = new List<string> { };
+        List<int> AtrinktuSumos = new List<int> { };
+        System.IO.StreamWriter file;
+        List<Combinations<string>> combinationsList = new List<Combinations<string>> { };
+        List<int> kiekiai = new List<int> { };
+        List<IList<string>> NR = new List<IList<string>> { };
         // START
         public Form1()
         {
@@ -256,8 +262,8 @@ namespace WindowsFormsApplication1
         }
         private int RastiTinkamiausiaRusi() //TODO:% 
         {
-            List<string> AtrinktiTipai = new List<string> { };
-            List<int> AtrinktuSumos = new List<int> { };
+            AtrinktiTipai = new List<string> { };
+            AtrinktuSumos = new List<int> { };
             for (int i = 0; i < problem.ilgis.Count; i++)
             {
                 if (AtrinktiTipai.IndexOf(problem.tipai[i]) < 0)
@@ -352,85 +358,139 @@ namespace WindowsFormsApplication1
             }
             richTextBox2.Text += "\n";
         }
-        private void AtrinktiTinkamusVariantus(int parketoRusis) // KVIESTI KurtiVariantus
-        {
-            for (int i = 0; i < sabl.SablonoNr.Count; i++)
-            {
-                KurtiVariantus(i);
-            }
-        }
-        private void KurtiVariantus(int SablonoNr) // PAKEISTI TIK PVZ
+        private void AtrinktiTinkamusVariantus(int parketoRusis)
         {
             string location = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase) + "\\SablonaiNew.txt";
             location = location.Substring(6);
-            System.IO.StreamWriter file = new System.IO.StreamWriter(location);
-            int[] inputSet = { 1 }; // 20x
-            int kiekis = 3; // 3
-            Combinations<int> combinations = new Combinations<int>(inputSet, kiekis, GenerateOption.WithRepetition);
-            file.WriteLine("Kiekis 1: " + combinations.Count); // console
-
-            int[] inputSet2 = { 1, 2 }; // 40x
-            int kiekis2 = 6; // 6
-            Combinations<int> combinations2 = new Combinations<int>(inputSet2, kiekis2, GenerateOption.WithRepetition);
-            file.WriteLine("Kiekis 2: " + combinations2.Count);
-
-            int[] inputSet3 = { 1, 2 }; // 60x
-            int kiekis3 = 6; // 6
-            Combinations<int> combinations3 = new Combinations<int>(inputSet3, kiekis3, GenerateOption.WithRepetition);
-            file.WriteLine("Kiekis 3: " + combinations3.Count);
-
-            file.WriteLine("Bendras kiekis: " + combinations.Count * combinations2.Count * combinations3.Count);
-            for (int kiek = 0; kiek < 1; kiek++)
+            file = new System.IO.StreamWriter(location);
+            for (int i = 0; i < sabl.SablonoNr.Count; i++)
             {
-                foreach (IList<int> v in combinations)
+                KurtiVariantus(i, parketoRusis);
+            }
+            file.Close();
+        }
+        private void KurtiVariantus(int SablonoNr, int parketoRusis)
+        {
+            file.WriteLine("Schemos Nr: " + sabl.SablonoNr[SablonoNr]);
+            combinationsList = new List<Combinations<string>> { };
+            kiekiai = new List<int> { };
+            NR = new List<IList<string>> { };
+            for(int i = 0; i < sabl.SablonoElem[SablonoNr].JuostIlgis.Count; i++)
+            {
+                file.WriteLine(sabl.SablonoElem[SablonoNr].JuostIlgis[i] + " X " + sabl.SablonoElem[SablonoNr].Kiekis[i]);
+                int k = 0;
+                List<string> inputSet = new List<string> { };
+                file.Write("Skirtingos medziu rusys: ");
+                for (int j = 0; j < problem.ilgis.Count; j++)
                 {
-                    foreach (IList<int> v2 in combinations2)
+                    if (problem.ilgis[j] == sabl.SablonoElem[SablonoNr].JuostIlgis[i])
                     {
-                        foreach (IList<int> v3 in combinations3)
+                        ++k;
+                        inputSet.Add(problem.tipai[j]);
+                        file.Write(inputSet[k-1].ToString() + " ");
+                    }
+                }
+                file.Write(Environment.NewLine + Environment.NewLine);
+                int kiekis = sabl.SablonoElem[SablonoNr].Kiekis[i];
+                Combinations<string> combinations = new Combinations<string>(inputSet, kiekis, GenerateOption.WithRepetition);
+                combinationsList.Add(combinations);
+                kiekiai.Add(kiekis);
+                NR.Add(null);
+                file.WriteLine("Kiekis: " + combinations.Count);
+                file.Write(Environment.NewLine);
+                foreach (IList<string> v in combinations)
+                {
+                    for (int z = 0; z < kiekis; z++)
+                    {
+                        file.Write(v[z]);
+                        if (z != kiekis - 1)
                         {
-                            for (int i = 0; i < kiekis; i++)
+                            file.Write(" ");
+                        }
+                        else
+                        {
+                            file.Write(Environment.NewLine);
+                        }
+                    }
+                }
+                file.Write(Environment.NewLine);
+            }
+            file.Write(Environment.NewLine);
+            rekursiveKurimas(0, SablonoNr, parketoRusis);
+            file.Write(Environment.NewLine + Environment.NewLine);
+        }
+        private void rekursiveKurimas(int nr, int SablonoNr, int parketoRusis) // WRITE TO CLASS
+        {
+            foreach (IList<string> v in combinationsList[nr])
+            {
+                NR[nr] = v;
+                if (nr != combinationsList.Count - 1)
+                {
+                    rekursiveKurimas(nr + 1, SablonoNr, parketoRusis);
+                }
+                else
+                {
+                    List<int> suma = new List<int> { };
+                    List<int> ks = new List<int> { };
+                    for (int s = 0; s < AtrinktiTipai.Count; s++)
+                    {
+                        suma.Add(0);
+                    }
+                    for (int i = 0; i < kiekiai.Count; i++)
+                    {
+                        int index;
+                        ks = new List<int> { };
+                        for (int s = 0; s < AtrinktiTipai.Count; s++)
+                        {
+                            ks.Add(0);
+                        }
+                        for (int j = 0; j < kiekiai[i]; j++)
+                        {
+                            file.Write(NR[i][j]);
+                            index = AtrinktiTipai.IndexOf(NR[i][j]);
+                            ks[index] += 1;
+                            if (j != kiekiai[i] - 1)
                             {
-                                file.Write(v[i]);
-                                if (i != kiekis - 1)
-                                {
-                                    file.Write(" ");
-                                }
-                                else
-                                {
-                                    file.Write(" | ");
-                                }
+                                file.Write(" ");
                             }
-                            for (int j = 0; j < kiekis2; j++)
+                            else
                             {
-                                file.Write(v2[j]);
-                                if (j != kiekis2 - 1)
+                                if (i != kiekiai.Count - 1)
                                 {
-                                    file.Write(" ");
+                                    file.Write("|");
                                 }
                                 else
                                 {
-                                    file.Write(" | ");
-                                }
-                            }
-                            for (int h = 0; h < kiekis3; h++)
-                            {
-                                file.Write(v3[h]);
-                                if (h != kiekis3 - 1)
-                                {
-                                    file.Write(" ");
-                                }
-                                else
-                                {
-                                    file.Write(Environment.NewLine);
+                                    file.Write("|| ");
                                 }
                             }
                         }
-                        file.Write(Environment.NewLine);
+                        for (int s = 0; s < AtrinktiTipai.Count; s++)
+                        {
+                            suma[s] += ks[s] * sabl.SablonoElem[SablonoNr].JuostIlgis[i];
+                        }
                     }
-                    file.Write(Environment.NewLine + Environment.NewLine);
+                    Boolean tinka = true;
+                    for (int s = 0; s < AtrinktiTipai.Count; s++)
+                    {
+                        file.Write(suma[s] + " ");
+                        int index = duom.Rus[parketoRusis].pav.IndexOf(AtrinktiTipai[s]);
+                        int pr = Convert.ToInt32(duom.Rus[parketoRusis].pradzia[index] * 660 / 100);
+                        int pb = Convert.ToInt32(duom.Rus[parketoRusis].pabaiga[index] * 660 / 100);
+                        int paklaidosRibaPr = Convert.ToInt32(Math.Floor(Convert.ToDouble(pr * 0.05)));
+                        int paklaidosRibaPb = Convert.ToInt32(Math.Floor(Convert.ToDouble(pb * 0.05)));
+                        if (suma[s] < pr - paklaidosRibaPr || suma[s] > pb + paklaidosRibaPb)
+                        {
+                            tinka = false;
+                        }
+                    }
+                    if (tinka == true)
+                    {
+                        file.Write("TINKA");
+                    }
+                    file.Write(Environment.NewLine);
                 }
             }
-            file.Close();
         }
         // PREP WORK END        // CALC-MAIN
         private void bw_DoWork(object sender, DoWorkEventArgs e) // CALC-MAIN-->START
