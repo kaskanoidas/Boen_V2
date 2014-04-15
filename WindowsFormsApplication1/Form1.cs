@@ -28,7 +28,6 @@ namespace WindowsFormsApplication1
         List<Combinations<string>> combinationsList = new List<Combinations<string>> { };
         List<int> kiekiai = new List<int> { };
         List<IList<string>> NR = new List<IList<string>> { };
-        // START
         public Form1()
         {
             InitializeComponent();
@@ -36,7 +35,6 @@ namespace WindowsFormsApplication1
             GetSablonuDuomenys();
             GetJuosteliuIlgiai();
         }
-        // Data Management
         private void GetRusisDuomenys()
         {
             comboBox1.Items.Add("");
@@ -139,7 +137,6 @@ namespace WindowsFormsApplication1
                 }
             }
         }
-        // Data Management END      // END      // UI Functioning
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (richTextBox1.Text == "")
@@ -172,7 +169,7 @@ namespace WindowsFormsApplication1
                 paskutinisNr = 3;
             }
         }
-        private void button1_Click(object sender, EventArgs e) // MAIN-->CALC START
+        private void button1_Click(object sender, EventArgs e)
         {
             if (richTextBox1.Text == "")
             {
@@ -225,7 +222,6 @@ namespace WindowsFormsApplication1
                 }
             }
         }
-        // UI Functioning END       // CALC START     // PREP WORK
         private void Reset()
         {
             problem = new Uzklausa();
@@ -260,7 +256,7 @@ namespace WindowsFormsApplication1
             int NR = RastiTinkamiausiaRusi();
             return NR;
         }
-        private int RastiTinkamiausiaRusi() //TODO:% 
+        private int RastiTinkamiausiaRusi()
         {
             AtrinktiTipai = new List<string> { };
             AtrinktuSumos = new List<int> { };
@@ -380,42 +376,20 @@ namespace WindowsFormsApplication1
                 file.WriteLine(sabl.SablonoElem[SablonoNr].JuostIlgis[i] + " X " + sabl.SablonoElem[SablonoNr].Kiekis[i]);
                 int k = 0;
                 List<string> inputSet = new List<string> { };
-                file.Write("Skirtingos medziu rusys: ");
                 for (int j = 0; j < problem.ilgis.Count; j++)
                 {
                     if (problem.ilgis[j] == sabl.SablonoElem[SablonoNr].JuostIlgis[i])
                     {
                         ++k;
                         inputSet.Add(problem.tipai[j]);
-                        file.Write(inputSet[k-1].ToString() + " ");
                     }
                 }
-                file.Write(Environment.NewLine + Environment.NewLine);
                 int kiekis = sabl.SablonoElem[SablonoNr].Kiekis[i];
                 Combinations<string> combinations = new Combinations<string>(inputSet, kiekis, GenerateOption.WithRepetition);
                 combinationsList.Add(combinations);
                 kiekiai.Add(kiekis);
                 NR.Add(null);
-                file.WriteLine("Kiekis: " + combinations.Count);
-                file.Write(Environment.NewLine);
-                foreach (IList<string> v in combinations)
-                {
-                    for (int z = 0; z < kiekis; z++)
-                    {
-                        file.Write(v[z]);
-                        if (z != kiekis - 1)
-                        {
-                            file.Write(" ");
-                        }
-                        else
-                        {
-                            file.Write(Environment.NewLine);
-                        }
-                    }
-                }
-                file.Write(Environment.NewLine);
             }
-            file.Write(Environment.NewLine);
             rekursiveKurimas(0, SablonoNr, parketoRusis);
             file.Write(Environment.NewLine + Environment.NewLine);
         }
@@ -446,24 +420,8 @@ namespace WindowsFormsApplication1
                         }
                         for (int j = 0; j < kiekiai[i]; j++)
                         {
-                            file.Write(NR[i][j]);
                             index = AtrinktiTipai.IndexOf(NR[i][j]);
                             ks[index] += 1;
-                            if (j != kiekiai[i] - 1)
-                            {
-                                file.Write(" ");
-                            }
-                            else
-                            {
-                                if (i != kiekiai.Count - 1)
-                                {
-                                    file.Write("|");
-                                }
-                                else
-                                {
-                                    file.Write("|| ");
-                                }
-                            }
                         }
                         for (int s = 0; s < AtrinktiTipai.Count; s++)
                         {
@@ -473,7 +431,6 @@ namespace WindowsFormsApplication1
                     Boolean tinka = true;
                     for (int s = 0; s < AtrinktiTipai.Count; s++)
                     {
-                        file.Write(suma[s] + " ");
                         int index = duom.Rus[parketoRusis].pav.IndexOf(AtrinktiTipai[s]);
                         int pr = Convert.ToInt32(duom.Rus[parketoRusis].pradzia[index] * 660 / 100);
                         int pb = Convert.ToInt32(duom.Rus[parketoRusis].pabaiga[index] * 660 / 100);
@@ -486,14 +443,38 @@ namespace WindowsFormsApplication1
                     }
                     if (tinka == true)
                     {
-                        file.Write("TINKA");
+                        for (int i = 0; i < kiekiai.Count; i++)
+                        {
+                            for (int j = 0; j < kiekiai[i]; j++)
+                            {
+                                file.Write(NR[i][j]);
+                                if (j != kiekiai[i] - 1)
+                                {
+                                    file.Write(" ");
+                                }
+                                else
+                                {
+                                    if (i != kiekiai.Count - 1)
+                                    {
+                                        file.Write("|");
+                                    }
+                                    else
+                                    {
+                                        file.Write("|| ");
+                                    }
+                                }
+                            }
+                        }
+                        for (int s = 0; s < AtrinktiTipai.Count; s++)
+                        {
+                            file.Write(suma[s] + " ");
+                        }
+                        file.Write(Environment.NewLine);
                     }
-                    file.Write(Environment.NewLine);
                 }
             }
         }
-        // PREP WORK END        // CALC-MAIN
-        private void bw_DoWork(object sender, DoWorkEventArgs e) // CALC-MAIN-->START
+        private void bw_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
             int t = 10; int c = t - 1; int k = 50; // 10 ir 20
@@ -534,8 +515,7 @@ namespace WindowsFormsApplication1
             Print();
             button1.Enabled = true;
         }
-        // CALC-MAIN--> FUNCTIONS
-        private void NykstukuFabrikas(int kiekis)
+        private void NykstukuFabrikas(int kiekis) // CHANGE TO NEW
         {
             Random r = new Random();
             for (int kiek = 0; kiek < kiekis; kiek++)
@@ -589,7 +569,7 @@ namespace WindowsFormsApplication1
                 RandomList.random.Add(Randomiser);
             }
         }
-        private void Testing(int dalyba)
+        private void Testing(int dalyba) // CHANGE TO NEW
         {
             RandomElements rand = new RandomElements();
             List<int> viso = new List<int> { };
@@ -652,7 +632,7 @@ namespace WindowsFormsApplication1
             }
             RandomList = rand;
         }
-        private void CloneBest(int kiekis)
+        private void CloneBest(int kiekis) // CHANGE TO NEW
         {
             Random r = new Random();
             int pradiniai = RandomList.random.Count;
@@ -727,7 +707,7 @@ namespace WindowsFormsApplication1
                 }
             }
         }
-        private void Print()
+        private void Print() // CHANGE TO NEW
         {
             richTextBox2.Text += "Atsakymas: " + "\n";
             for (int i = 0; i < Math.Min(1, RandomList.random.Count); i++)
@@ -747,7 +727,6 @@ namespace WindowsFormsApplication1
                 }
             }
         }
-        // CALC-MAIN--> FUNCTIONS END       // CALC END
     }
 }
 public class Rusys
