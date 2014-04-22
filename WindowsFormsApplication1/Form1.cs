@@ -531,11 +531,11 @@ namespace WindowsFormsApplication1
         private void bw_DoWork(object sender, DoWorkEventArgs e)//MAIN
         {
             BackgroundWorker worker = sender as BackgroundWorker;
-            int t = 10; int c = t - 1; int k = 10; // 30
+            int t = 10; int c = t - 1; int k = 30; // 30
             int kiekis = k * subsabl.SablonoSubNr.Count;
             //int kiekis = Convert.ToInt32(Math.Floor(Convert.ToDouble(10000) / Convert.ToDouble(subsabl.SablonoSubNr.Count)));
             //int kiekLiko = Convert.ToInt32(textBox2.Text); 
-            int kiek = Convert.ToInt32(textBox2.Text); int SUMA = 0;
+            int kiek = 0; int SUMA = 0;
             worker.ReportProgress(SUMA);
             NykstukuFabrikas(kiekis);
             now = DateTime.Now;
@@ -547,22 +547,22 @@ namespace WindowsFormsApplication1
             //CloneBest(c);
             //Testing(t);
 
-            while (kiek != 0 && uzbaigti == false) // liekana => pagamintaDetaliu
+            while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false) // liekana => pagamintaDetaliu
             {
                 CloneBest(c);
                 Testing(t);
                 if (RandomList.random[0].pagamintaDetaliu > min)
                 {
                     min = RandomList.random[0].pagamintaDetaliu;
-                    kiek = Convert.ToInt32(textBox2.Text);
+                    kiek = 0;
                 }
                 if (RandomList.random[0].pagamintaDetaliu == min)
                 {
-                    kiek--;
+                    kiek++;
                 }
                 if (RandomList.random[0].pagamintaDetaliu < min)
                 {
-                    kiek = Convert.ToInt32(textBox2.Text);
+                    kiek = 0;
                 }
                 SukurtuSkaicius = RandomList.random[0].pagamintaDetaliu;
                 worker.ReportProgress(SUMA++);
