@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -19,7 +20,6 @@ namespace WindowsFormsApplication1
         Elementas elem = new Elementas();
         Uzklausa problem = new Uzklausa();
         Uzklausa visoP = new Uzklausa();
-        RandomiserClass Randomiser = new RandomiserClass();
         RandomElements RandomList = new RandomElements();
         List<string> AtrinktiTipai = new List<string> { };
         List<string> AtrinktosSpalvos = new List<string> { };
@@ -33,13 +33,13 @@ namespace WindowsFormsApplication1
         Boolean kill;
         Boolean uzbaigti;
         int SukurtuSkaicius;
-        DateTime time;
-        DateTime now;
-        DateTime now2;
-        DateTime now3;
-        DateTime now4;
-        DateTime now5;
-        DateTime now6;
+        List<BackgroundWorker> Helpers = new List<BackgroundWorker> { };
+        ConcurrentStack<RandomiserClass> HelperList = new ConcurrentStack<RandomiserClass> { };
+        ConcurrentStack<int> counter = new ConcurrentStack<int> { };
+        int threadCount;
+        //int ThreadEndCount;
+        string ThreadinimuiTipas;
+        private AutoResetEvent _resetEvent = new AutoResetEvent(false);
         // Pradinių duomenų gavimas ir apdorojimas:
         public Form1()
         {
@@ -180,8 +180,6 @@ namespace WindowsFormsApplication1
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            time = new DateTime();
-            time = DateTime.Now;
             uzbaigti = false;
             button2.Enabled = true;
             SukurtuSkaicius = 0;
@@ -198,7 +196,7 @@ namespace WindowsFormsApplication1
                 if (comboBox1.SelectedIndex == -1 || comboBox1.SelectedIndex == 0)
                 {
                     nr = ReadTextBox();
-                    if (nr != -1)
+                    if (nr != -1 && nr != -2)
                     {
                         richTextBox2.Text += "Rasta parketo rūšis:  " + duom.vardas[nr] + "\n";
                     }
@@ -228,7 +226,6 @@ namespace WindowsFormsApplication1
                         bw.DoWork += new DoWorkEventHandler(bw_DoWork);
                         bw.ProgressChanged += new ProgressChangedEventHandler(bw_ProgressChanged);
                         bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
-                        now5 = DateTime.Now;
                         if (bw.IsBusy != true)
                         {
                             bw.RunWorkerAsync();
@@ -251,7 +248,6 @@ namespace WindowsFormsApplication1
         {
             problem = new Uzklausa();
             visoP = new Uzklausa();
-            Randomiser = new RandomiserClass();
             RandomList = new RandomElements();
         }
         private int ReadTextBox()
@@ -533,23 +529,20 @@ namespace WindowsFormsApplication1
             BackgroundWorker worker = sender as BackgroundWorker;
             int t = 10; int c = t - 1; int k = 30; // 30
             int kiekis = k * subsabl.SablonoSubNr.Count;
-            //int kiekis = Convert.ToInt32(Math.Floor(Convert.ToDouble(10000) / Convert.ToDouble(subsabl.SablonoSubNr.Count)));
-            //int kiekLiko = Convert.ToInt32(textBox2.Text); 
             int kiek = 0; int SUMA = 0;
+            KurtiWorkers(k);
             worker.ReportProgress(SUMA);
-            NykstukuFabrikas(kiekis);
-            now = DateTime.Now;
+            StartThreads("NykstukuFabrikas", subsabl.SablonoSubNr.Count, k);
             Testing(t);
-            now2 = DateTime.Now;
             int min = 0;
             worker.ReportProgress(SUMA++);
 
-            //CloneBest(c);
+           // StartThreads("Clone", 1, c);
             //Testing(t);
 
-            while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false) // liekana => pagamintaDetaliu
+            while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false)
             {
-                CloneBest(c);
+                StartThreads("Clone", 1, c);
                 Testing(t);
                 if (RandomList.random[0].pagamintaDetaliu > min)
                 {
@@ -568,6 +561,59 @@ namespace WindowsFormsApplication1
                 worker.ReportProgress(SUMA++);
             }
         }
+        private void KurtiWorkers(int k)
+        {
+            Helpers = new List<BackgroundWorker> { };
+            for (int i = 0; i < k; i++)
+            {
+                BackgroundWorker bwk = new BackgroundWorker();
+                bwk.WorkerSupportsCancellation = true;
+                bwk.WorkerReportsProgress = true;
+                bwk.DoWork += new DoWorkEventHandler(bwk_DoWork);
+                bwk.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bwk_RunWorkerCompleted);
+                Helpers.Add(bwk);
+            }
+        }
+        private void StartThreads(string Tipas, int count, int threads)
+        {
+            counter = new ConcurrentStack<int> { };
+            threadCount = threads;
+            ThreadinimuiTipas = Tipas;
+            HelperList = new ConcurrentStack<RandomiserClass> { };
+            for (int i = 0; i < threadCount; i++)
+            {
+                Helpers[i].RunWorkerAsync(count);
+            }
+            _resetEvent.WaitOne();
+            RasytiIList();
+        }
+        private void RasytiIList()
+        {
+            RandomiserClass item = new RandomiserClass();
+            while (HelperList.TryPop(out item))
+            {
+                RandomList.random.Add(item);
+            }
+        }
+        private void bwk_DoWork(object sender, DoWorkEventArgs e)
+        {
+            if (ThreadinimuiTipas == "NykstukuFabrikas")
+            {
+                NykstukuFabrikas((int)e.Argument);
+            }
+            if (ThreadinimuiTipas == "Clone")
+            {
+                CloneBest((int)e.Argument);
+            }
+        }
+        private void bwk_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            counter.Push(counter.Count +1);
+            if (counter.Count == threadCount)
+            {
+                _resetEvent.Set();
+            }
+        }
         private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             int kiek = e.ProgressPercentage;
@@ -576,18 +622,6 @@ namespace WindowsFormsApplication1
         }
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            //long laikas = now5.Ticks - time.Ticks;
-            //richTextBox1.Text += "\n" + "Laikas iki paleidimo: " + Convert.ToDouble(laikas / 10000).ToString() + "\n";
-            //laikas = now.Ticks - time.Ticks;
-            //richTextBox1.Text += "\n" + "Laikas farikas: " + Convert.ToDouble(laikas / 10000).ToString() + "\n";
-            //laikas = now2.Ticks - now.Ticks;
-            //richTextBox1.Text += "\n" + "Laikas testing: " + Convert.ToDouble(laikas / 10000).ToString() + "\n";
-            //laikas = now3.Ticks - now2.Ticks;
-            //richTextBox1.Text += "\n" + "Laikas clone kurimas: " + Convert.ToDouble(laikas / 10000).ToString() + "\n";
-            //laikas = now4.Ticks - now3.Ticks;
-            //richTextBox1.Text += "\n" + "Laikas clone tvarkymas: " + Convert.ToDouble(laikas / 10000).ToString() + "\n";
-            //laikas = now5.Ticks - now4.Ticks;
-            //laikas = now6.Ticks - now5.Ticks;
             Print();
             button1.Enabled = true;
         }
@@ -598,7 +632,9 @@ namespace WindowsFormsApplication1
         }
         private void NykstukuFabrikas(int kiekis)
         {
+            // RandomList => HelperList
             Random r = new Random();
+            RandomiserClass Randomiser = new RandomiserClass();
             for (int kiek = 0; kiek < kiekis; kiek++)
             {
                 Randomiser = new RandomiserClass();
@@ -688,7 +724,7 @@ namespace WindowsFormsApplication1
                         }
                     }
                     Randomiser.pagamintaDetaliu = pagaminta;
-                    RandomList.random.Add(Randomiser);
+                    HelperList.Push(Randomiser);//RandomList.random.Add(Randomiser);
                 }
             }
         }
@@ -717,6 +753,7 @@ namespace WindowsFormsApplication1
         private void CloneBest(int kiekis)
         {
             Random r = new Random();
+            RandomiserClass Randomiser = new RandomiserClass();
             int pradiniai = RandomList.random.Count;
             for (int i = 0; i < pradiniai; i++)
             {
@@ -753,82 +790,79 @@ namespace WindowsFormsApplication1
                             }
                         }
                     }
-                    RandomList.random.Add(Randomiser);
-                }
-            }
-            now3 = DateTime.Now;
-            for (int i = 0; i < RandomList.random.Count; i++)   // Put back in
-            {
-                List<int> likeNr = new List<int> { };
-                for (int h = 0; h < RandomList.random[i].sablonas.SablonoNr.Count; h++)
-                {
-                    likeNr.Add(RandomList.random[i].sablonas.SablonoNr[h]);
-                }
-                while (likeNr.Count != 0)
-                {
-                    int randomSablNr = r.Next(0, likeNr.Count);
-                    int min = 99999;
-                    for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem[randomSablNr].JuostIlgis.Count; j++)
+
+                    List<int> likeNr = new List<int> { };
+                    for (int h = 0; h < Randomiser.sablonas.SablonoNr.Count; h++)   // Put back in
                     {
-                        for (int x = 0; x < problem.kiekis.Count; x++)
+                        likeNr.Add(Randomiser.sablonas.SablonoNr[h]);
+                    }
+                    while (likeNr.Count != 0)
+                    {
+                        int randomSablNr = r.Next(0, likeNr.Count);
+                        int min = 99999;
+                        for (int j = 0; j < Randomiser.sablonas.SablonoElem[randomSablNr].JuostIlgis.Count; j++)
                         {
-                            if (problem.ilgis[x] == RandomList.random[i].sablonas.SablonoElem[randomSablNr].JuostIlgis[j] && problem.tipai[x] == RandomList.random[i].sablonas.SablonoElem[randomSablNr].JuostTipas[j])
+                            for (int x = 0; x < problem.kiekis.Count; x++)
                             {
-                                double dal = Convert.ToDouble(RandomList.random[i].sablonas.SablonoElem[randomSablNr].Kiekis[j]);
-                                int dalyba;
-                                if (dal != 0)
+                                if (problem.ilgis[x] == Randomiser.sablonas.SablonoElem[randomSablNr].JuostIlgis[j] && problem.tipai[x] == Randomiser.sablonas.SablonoElem[randomSablNr].JuostTipas[j])
                                 {
-                                    dalyba = Convert.ToInt32(Math.Floor(Convert.ToDouble(RandomList.random[i].suma[x]) / dal));
+                                    double dal = Convert.ToDouble(Randomiser.sablonas.SablonoElem[randomSablNr].Kiekis[j]);
+                                    int dalyba;
+                                    if (dal != 0)
+                                    {
+                                        dalyba = Convert.ToInt32(Math.Floor(Convert.ToDouble(Randomiser.suma[x]) / dal));
+                                    }
+                                    else
+                                    {
+                                        dalyba = 999999;
+                                    }
+                                    if (dalyba < min)
+                                    {
+                                        min = dalyba;
+                                    }
                                 }
-                                else
+                            }
+                        }
+                        if (min == 0)
+                        {
+                            likeNr.RemoveAt(randomSablNr);
+                        }
+                        else
+                        {
+                            int atm = r.Next(0, min + 1);
+                            Randomiser.kiekis[randomSablNr] += atm;
+                            for (int j = 0; j < Randomiser.sablonas.SablonoElem[randomSablNr].Kiekis.Count; j++)
+                            {
+                                int atimti = Randomiser.sablonas.SablonoElem[randomSablNr].Kiekis[j] * atm;
+                                for (int h = 0; h < problem.kiekis.Count; h++)
                                 {
-                                    dalyba = 999999;
-                                }
-                                if (dalyba < min)
-                                {
-                                    min = dalyba;
+                                    if (problem.ilgis[h] == Randomiser.sablonas.SablonoElem[randomSablNr].JuostIlgis[j] && problem.tipai[h] == Randomiser.sablonas.SablonoElem[randomSablNr].JuostTipas[j])
+                                    {
+                                        Randomiser.suma[h] -= atimti;
+                                    }
                                 }
                             }
                         }
                     }
-                    if (min == 0)
+                    int suma = 0;
+                    for (int sum = 0; sum < Randomiser.suma.Count; sum++)
                     {
-                        likeNr.RemoveAt(randomSablNr);
+                        suma += Math.Abs(Randomiser.suma[sum]);
                     }
-                    else
+                    Randomiser.liekana = suma;
+                    int pagaminta = 0;
+                    for (int j = 0; j < Randomiser.sablonas.SablonoElem.Count; j++)
                     {
-                        int atm = r.Next(0, min + 1);
-                        RandomList.random[i].kiekis[randomSablNr] += atm;
-                        for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem[randomSablNr].Kiekis.Count; j++)
+                        if (Randomiser.kiekis[j] != 0)
                         {
-                            int atimti = RandomList.random[i].sablonas.SablonoElem[randomSablNr].Kiekis[j] * atm;
-                            for (int h = 0; h < problem.kiekis.Count; h++)
-                            {
-                                if (problem.ilgis[h] == Randomiser.sablonas.SablonoElem[randomSablNr].JuostIlgis[j] && problem.tipai[h] == Randomiser.sablonas.SablonoElem[randomSablNr].JuostTipas[j])
-                                {
-                                    RandomList.random[i].suma[h] -= atimti;
-                                }
-                            }
+                            pagaminta += Randomiser.kiekis[j];
                         }
                     }
+                    Randomiser.pagamintaDetaliu = pagaminta;
+
+                    HelperList.Push(Randomiser);//RandomList.random.Add(Randomiser);
                 }
-                int suma = 0;
-                for (int sum = 0; sum < RandomList.random[i].suma.Count; sum++)
-                {
-                    suma += Math.Abs(RandomList.random[i].suma[sum]);
-                }
-                RandomList.random[i].liekana = suma;
-                int pagaminta = 0;
-                for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
-                {
-                    if (RandomList.random[i].kiekis[j] != 0)
-                    {
-                        pagaminta += RandomList.random[i].kiekis[j];
-                    }
-                }
-                RandomList.random[i].pagamintaDetaliu = pagaminta;
             }
-            now4 = DateTime.Now;
         }
         private void Print()
         {
@@ -850,7 +884,7 @@ namespace WindowsFormsApplication1
                         {
                             pasikartojimas = RandomList.random[i].sablonas.SablonoNr[j];
                             richTextBox2.AppendText("+-------------------------------------------------------------------------------------------------------------------------+" + '\n');
-                            richTextBox2.AppendText("|| Schemos Nr: " + RandomList.random[i].sablonas.SablonoNr[j].ToString().PadLeft(4 - RandomList.random[i].sablonas.SablonoNr[j].ToString().Length) + " | Rušys: ");
+                            richTextBox2.AppendText("Schemos Nr: " + RandomList.random[i].sablonas.SablonoNr[j].ToString().PadLeft(4 - RandomList.random[i].sablonas.SablonoNr[j].ToString().Length) + " | Rušys: ");
                             for (int h = 0; h < AtrinktiTipai.Count; h++)
                             {
                                 Color color = Color.FromArgb(Int32.Parse(AtrinktosSpalvos[h], System.Globalization.NumberStyles.HexNumber));
@@ -868,19 +902,11 @@ namespace WindowsFormsApplication1
                                     richTextBox2.AppendText(" |" + '\n');
                                 }
                             }
-                            richTextBox2.AppendText("\n");
-                            //richTextBox2.AppendText("+---------------------------+------------------------------------------------------------+" + '\n');
-                            richTextBox2.AppendText("||| Kiek gaminti   | Ilgis * Kiekis ||..................." + "\n"); // bug 
-                            //for (int h = 0; h < RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis.Count; h++)
-                            //{
-                            //    if (RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h] != 0)
-                            //    {
-                            //        richTextBox2.AppendText(" Ilgis | Kiekis ||");
-                            //    }
-                            //}
-                            //richTextBox2.AppendText("\n");
+                            richTextBox2.AppendText("+-------------------------------------------------------------------------------------------------------------------------+" + '\n');
+                            richTextBox2.AppendText("Kiek gaminti  | Ilgis * Kiekis |..................." + "\n");
+                            richTextBox2.AppendText("+----------------------------------------+------------------" + '\n');
                         }
-                        richTextBox2.AppendText("|||  " + RandomList.random[i].kiekis[j].ToString().PadRight(20 - RandomList.random[i].kiekis[j].ToString().Length) + " | ");
+                        richTextBox2.AppendText(RandomList.random[i].kiekis[j].ToString().PadRight(20 - RandomList.random[i].kiekis[j].ToString().Length) + " | ");
                         viso += RandomList.random[i].kiekis[j];
                         for (int h = 0; h < RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis.Count; h++ )
                         {
@@ -892,7 +918,7 @@ namespace WindowsFormsApplication1
                                 richTextBox2.SelectionLength = 0;
                                 richTextBox2.SelectionColor = color;
                                 richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis[h].ToString().PadLeft(6 - RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis[h].ToString().Length) + " * ");
-                                richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().PadRight(9 - RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().Length) + " || ");
+                                richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().PadRight(9 - RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().Length) + " | ");
                                 richTextBox2.SelectionColor = richTextBox2.ForeColor;
                             }
                         }
@@ -901,35 +927,8 @@ namespace WindowsFormsApplication1
                 }
                 richTextBox2.AppendText("+-------------------------------------------------------------------------------------------------------------------------+" + '\n');
                 richTextBox2.AppendText("Viso detalių sukurta: " + viso);
-               // InsertTable(richTextBox2, 10, 10, 100, 700);
             }
         }
-        //public void InsertTable(RichTextBox Rtb, int Rows, int Cols, int BrdrW, int TableWidth)
-        //{
-        //    String A; int i = 1, j = 1, a = 1, b = 1;
-        //    A = @"{\rtf1\fbidis\ansi\ansicpg1252\deff0\deflang1033" + @"{\fonttbl{\f0\froman\fprq2\fcharset0 Times New Roman;}" + @"{\f1\fnil\fcharset0 Microsoft Sans Serif;}}" + @"\viewkind4\uc1\trowd";
-        //    for (; j <= Rows; j++) // for every row
-        //    {
-        //        for (; i <= Cols; i++) // for every column
-        //        {
-        //            A += @"\clbrdrt\brdrw" + BrdrW + "\brdrs" + // + 
-        //                 @"\clbrdrl\brdrw" + BrdrW + "\brdrs" +
-        //                 @"\clbrdrb\brdrw" + BrdrW + "\brdrs" +
-        //                 @"\clbrdrr\brdrw" + BrdrW + "\brdrs" +
-        //                 @"\cellx" + ((TableWidth / Cols) * 10 * i);
-        //        }
-        //        A += @"\pard\intbl\ltrpar\lang1023\f0\fs24";
-        //        for (; a <= Rows; a++)
-        //        {
-        //            A += @"\intbl\clmrg";
-        //            for (; b <= Cols; b++) A += @"\cell";
-        //            A += @"\row";
-        //        }
-        //    }
-        //    A += "}";
-        //    Rtb.SelectedRtf = A; // send table to RichTextBox 
-        //    Rtb.Rtf = Rtb.Rtf.Replace("\\\'08rdrs", "");  // (\'08rdrs seems to be the side effect here)
-        //}
     }
 }
 // Duomenų klasės:
