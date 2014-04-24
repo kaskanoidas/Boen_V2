@@ -37,7 +37,6 @@ namespace WindowsFormsApplication1
         ConcurrentStack<RandomiserClass> HelperList = new ConcurrentStack<RandomiserClass> { };
         ConcurrentStack<int> counter = new ConcurrentStack<int> { };
         int threadCount;
-        //int ThreadEndCount;
         string ThreadinimuiTipas;
         private AutoResetEvent _resetEvent = new AutoResetEvent(false);
         // Pradinių duomenų gavimas ir apdorojimas:
@@ -51,7 +50,7 @@ namespace WindowsFormsApplication1
         }
         private void Spalvos()
         {
-            AtrinktosSpalvos = new List<string> {"FF0000", "00FF00", "0000FF", "FFFF00", "FF00FF", "00FFFF", "000000", 
+            AtrinktosSpalvos = new List<string> {"FF0000", "00FF00", "0000FF", "FF00FF", "00FFFF", "000000", 
         "800000", "008000", "000080", "808000", "800080", "008080", "808080", 
         "C00000", "00C000", "0000C0", "C0C000", "C000C0", "00C0C0", "C0C0C0", 
         "400000", "004000", "000040", "404000", "400040", "004040", "404040", 
@@ -226,8 +225,11 @@ namespace WindowsFormsApplication1
                         bw.DoWork += new DoWorkEventHandler(bw_DoWork);
                         bw.ProgressChanged += new ProgressChangedEventHandler(bw_ProgressChanged);
                         bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
+                        //richTextBox2.Text += "Pradetas evo dauginimas su variantu: " + subsabl.SablonoSubNr.Count + '\n';
+                        //test();
                         if (bw.IsBusy != true)
                         {
+                            richTextBox2.Text += "Pradetas evo dauginimas su variantu: " + subsabl.SablonoSubNr.Count + '\n';
                             bw.RunWorkerAsync();
                         }
                     }
@@ -524,20 +526,56 @@ namespace WindowsFormsApplication1
             }
         }
         // Pagrindinis skaičiavimas ir rezultatų spausdinimas:
+        private void test()
+        {
+            int t = 10; int c = t - 1; int k = 30; // 30
+            int kiekis = k * subsabl.SablonoSubNr.Count;
+            int kiek = 0;
+            richTextBox2.Text += "Workers create => ";
+            KurtiWorkers(k);
+            richTextBox2.Text += "Workers end" + '\n';
+            richTextBox2.Text += "Fabrikas create => ";
+            StartThreads("NykstukuFabrikas", subsabl.SablonoSubNr.Count, k);
+            richTextBox2.Text += "Fabrikas end"+ '\n';
+            Testing(t);
+            int min = 0;
+
+            while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false)
+            {
+                StartThreads("Clone", 1, c);
+                Testing(t);
+                if (RandomList.random[0].pagamintaDetaliu > min)
+                {
+                    min = RandomList.random[0].pagamintaDetaliu;
+                    kiek = 0;
+                }
+                if (RandomList.random[0].pagamintaDetaliu == min)
+                {
+                    kiek++;
+                }
+                if (RandomList.random[0].pagamintaDetaliu < min)
+                {
+                    kiek = 0;
+                }
+                SukurtuSkaicius = RandomList.random[0].pagamintaDetaliu;
+            }
+            Print();
+            button1.Enabled = true;
+        }
         private void bw_DoWork(object sender, DoWorkEventArgs e)//MAIN
         {
             BackgroundWorker worker = sender as BackgroundWorker;
             int t = 10; int c = t - 1; int k = 30; // 30
-            int kiekis = k * subsabl.SablonoSubNr.Count;
+            int kiekis = k * sabl.SablonoNr.Count;//subsabl.SablonoSubNr.Count;
             int kiek = 0; int SUMA = 0;
             KurtiWorkers(k);
             worker.ReportProgress(SUMA);
-            StartThreads("NykstukuFabrikas", subsabl.SablonoSubNr.Count, k);
+            StartThreads("NykstukuFabrikas", sabl.SablonoNr.Count, k); // subsabl.SablonoSubNr.Count;
             Testing(t);
             int min = 0;
             worker.ReportProgress(SUMA++);
 
-           // StartThreads("Clone", 1, c);
+            //StartThreads("Clone", 1, c);
             //Testing(t);
 
             while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false)
@@ -735,7 +773,7 @@ namespace WindowsFormsApplication1
             int KiekAtrinktiVariantu = Convert.ToInt32(Math.Floor(Convert.ToDouble(RandomList.random.Count) / dalyba));
             for (int i = 0; i < Math.Min(RandomList.random.Count, KiekAtrinktiVariantu); i++)
             {
-                int min = 0; int mn = -1;
+                int min = 0; int mn = 0;
                 for (int j = 0; j < RandomList.random.Count; j++)
                 {
 
