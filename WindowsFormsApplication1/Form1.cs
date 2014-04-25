@@ -96,7 +96,7 @@ namespace WindowsFormsApplication1
                     }
                     else
                     {
-                        Pradzia = Convert.ToDouble(vardas.Substring(tarpas + 1, galas - tarpas - 1)); // OAK Finale 0-20 gadina kazkodel.
+                        Pradzia = Convert.ToDouble(vardas.Substring(tarpas + 1, galas - tarpas - 1));
                         tarpas = galas;
                         galas = vardas.IndexOf(",", tarpas);
                         if (galas < 0)
@@ -112,7 +112,59 @@ namespace WindowsFormsApplication1
                     duomenys.pabaiga.Add(Pabaiga);
                     j++;
                 }
-                duom.Rus.Add(duomenys);
+                galas = vardas.IndexOf("!", tarpas + 1);
+                if (galas < 0)                                                                  
+                {
+                    duom.Rus.Add(duomenys);
+                }
+                else
+                {
+                    string neleidziami = vardas.Substring(tarpas + 1, galas - tarpas - 1);
+                    tarpas = galas;
+                    string[] ne = neleidziami.Split();
+                    int i = 1;
+                    string budas = ne[0];
+                    if (budas == "ND")
+                    {
+                        while (i < ne.Length)
+                        {
+                            duom.NeleidziamosRusys.Add(int.Parse(ne[i++]));
+                        }
+                        galas = vardas.IndexOf("!", tarpas + 1);
+                    }
+                    else if(budas == "K")
+                    {
+                        while (i < ne.Length)
+                        {
+                            duom.KoDeti.Add(ne[i++]);
+                            duom.PoKiekDeti.Add(int.Parse(ne[i++]));
+                        }
+                        galas = vardas.IndexOf("!", tarpas + 1);
+                    }
+                    if (galas < 0)
+                    {
+                        duom.Rus.Add(duomenys);
+                    }
+                    else
+                    {
+                        if (budas == "ND")
+                        {
+                            while (i < ne.Length)
+                            {
+                                duom.NeleidziamosRusys.Add(int.Parse(ne[i++]));
+                            }
+                        }
+                        else if (budas == "K")
+                        {
+                            while (i < ne.Length)
+                            {
+                                duom.KoDeti.Add(ne[i++]);
+                                duom.PoKiekDeti.Add(int.Parse(ne[i++]));
+                            }
+                        }
+                        duom.Rus.Add(duomenys);
+                    }
+                }
             }
             file.Close();
         }
@@ -229,7 +281,6 @@ namespace WindowsFormsApplication1
                         //test();
                         if (bw.IsBusy != true)
                         {
-                            richTextBox2.Text += "Pradetas evo dauginimas su variantu: " + subsabl.SablonoSubNr.Count + '\n';
                             bw.RunWorkerAsync();
                         }
                     }
@@ -566,11 +617,11 @@ namespace WindowsFormsApplication1
         {
             BackgroundWorker worker = sender as BackgroundWorker;
             int t = 10; int c = t - 1; int k = 30; // 30
-            int kiekis = k * sabl.SablonoNr.Count;//subsabl.SablonoSubNr.Count;
+            int kiekis = k * sabl.SablonoNr.Count * 10;//subsabl.SablonoSubNr.Count;
             int kiek = 0; int SUMA = 0;
             KurtiWorkers(k);
             worker.ReportProgress(SUMA);
-            StartThreads("NykstukuFabrikas", sabl.SablonoNr.Count, k); // subsabl.SablonoSubNr.Count;
+            StartThreads("NykstukuFabrikas", sabl.SablonoNr.Count * 10, k); // subsabl.SablonoSubNr.Count;
             Testing(t);
             int min = 0;
             worker.ReportProgress(SUMA++);
@@ -974,6 +1025,9 @@ public class Rusys
 {
     public List<string> vardas = new List<string>{};
     public List<Rusis> Rus = new List<Rusis>{};
+    public List<int> NeleidziamosRusys = new List<int> { };
+    public List<int> PoKiekDeti = new List<int> { };
+    public List<string> KoDeti = new List<string> { };
 }
 public class Rusis
 {
