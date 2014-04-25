@@ -565,7 +565,7 @@ namespace WindowsFormsApplication1
                             }
                         }
                     }
-                    if (tinka == true && isimtis == false) // -isimtis == false
+                    if (tinka == true)
                     {
                         for (int s = 0; s < AtrinktiTipai.Count; s++)
                         {
