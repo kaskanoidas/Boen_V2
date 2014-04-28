@@ -74,7 +74,7 @@
             // 
             this.richTextBox2.Location = new System.Drawing.Point(189, 155);
             this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(753, 214);
+            this.richTextBox2.Size = new System.Drawing.Size(479, 214);
             this.richTextBox2.TabIndex = 3;
             this.richTextBox2.Text = "";
             // 
@@ -150,7 +150,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(416, 139);
+            this.label3.Location = new System.Drawing.Point(372, 139);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(0, 13);
             this.label3.TabIndex = 14;
@@ -212,7 +212,7 @@
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(534, 139);
+            this.label10.Location = new System.Drawing.Point(490, 139);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(0, 13);
             this.label10.TabIndex = 21;
@@ -241,7 +241,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(954, 380);
+            this.ClientSize = new System.Drawing.Size(680, 380);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.label10);
@@ -265,6 +265,7 @@
             this.Controls.Add(this.button1);
             this.Name = "Form1";
             this.Text = "BOEN šablonų generatorius";
+            this.SizeChanged += new System.EventHandler(this.Form1_ResizeEnd);
             this.ResumeLayout(false);
             this.PerformLayout();
 

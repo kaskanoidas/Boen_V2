@@ -39,6 +39,9 @@ namespace WindowsFormsApplication1
         int threadCount;
         string ThreadinimuiTipas;
         private AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        int x;
+        int y;
+        //Font orginalFont;
         // Pradinių duomenų gavimas ir apdorojimas:
         public Form1()
         {
@@ -47,6 +50,8 @@ namespace WindowsFormsApplication1
             GetSablonuDuomenys();
             GetJuosteliuIlgiai();
             Spalvos();
+            y = 419;
+            x = 696;
         }
         private void Spalvos()
         {
@@ -172,6 +177,7 @@ namespace WindowsFormsApplication1
                 }
             }
             file.Close();
+            comboBox1.SelectedIndex = 0;
         }
         private void GetSablonuDuomenys()
         {
@@ -243,6 +249,8 @@ namespace WindowsFormsApplication1
         }
         private void button1_Click(object sender, EventArgs e)
         {
+            //orginalFont = richTextBox2.Font;
+            richTextBox2.Font = new Font(FontFamily.GenericMonospace, richTextBox2.Font.Size);
             uzbaigti = false;
             button2.Enabled = true;
             SukurtuSkaicius = 0;
@@ -995,25 +1003,120 @@ namespace WindowsFormsApplication1
         }
         private void Print()
         {
-            richTextBox2.AppendText("Atsakymas: " + "\n");
+            // Atsakymas:
+            richTextBox2.SelectionStart = richTextBox2.TextLength;
+            richTextBox2.SelectionLength = 0;
+            richTextBox2.SelectionFont = new Font(richTextBox1.Font, FontStyle.Bold);
+            richTextBox2.AppendText('\n' + "Atsakymas: " + "\n");
+            richTextBox2.SelectionFont = richTextBox2.Font;
             for (int i = 0; i < Math.Min(1, RandomList.random.Count); i++)
             {
-                richTextBox2.AppendText("Liekana išskirsčius po schemas: " + RandomList.random[i].liekana + "\n");
+                // Liekanos lentele
+                int RusiesIlgis = 5;
+                int IlgioIlgis = 5;
+                int KiekioIlgis = 6;
                 for (int j = 0; j < RandomList.random[i].suma.Count; j++)
                 {
-                    richTextBox2.AppendText(RandomList.random[i].tipas[j] + " " + RandomList.random[i].ilgis[j] + " " + RandomList.random[i].suma[j] + "\n");
+                    if (RusiesIlgis < RandomList.random[i].tipas[j].Trim().Length)
+                    {
+                        RusiesIlgis = RandomList.random[i].tipas[j].Trim().Length;
+                    }
+                    if (IlgioIlgis < RandomList.random[i].ilgis[j].ToString().Length)
+                    {
+                        IlgioIlgis = RandomList.random[i].ilgis[j].ToString().Length;
+                    }
+                    if (KiekioIlgis < RandomList.random[i].suma[j].ToString().Length)
+                    {
+                        KiekioIlgis = RandomList.random[i].suma[j].ToString().Length;
+                    }
                 }
+                richTextBox2.AppendText("Liekana išskirsčius po schemas: " + RandomList.random[i].liekana + "\n");
+                string lentele = "|  " + "Rūšis".PadRight(RusiesIlgis) + "  |  " + "Ilgis".PadRight(IlgioIlgis) + "  |  " + "Kiekis".PadRight(KiekioIlgis) + "  |";
+                string linija = "+";
+                for (int j = 0; j < lentele.Length -2; j++)
+                {
+                    linija += "-";
+                }
+                linija += "+";
+                richTextBox2.AppendText(linija + '\n'); richTextBox2.AppendText(lentele + "\n"); richTextBox2.AppendText(linija + '\n');
+                for (int j = 0; j < RandomList.random[i].suma.Count; j++)
+                {
+                    richTextBox2.AppendText("|  " + RandomList.random[i].tipas[j].PadRight(RusiesIlgis) + "  |  " + RandomList.random[i].ilgis[j].ToString().PadRight(IlgioIlgis) + "  |  " + RandomList.random[i].suma[j].ToString().PadRight(KiekioIlgis) + "  |" + "\n");
+                }
+                richTextBox2.AppendText(linija + '\n');
+                // Schemu lentele
                 int viso = 0;
                 int pasikartojimas = -1;
+                List<int> kiekGaminti = new List<int> { };
+                int max = 0;
+                int maxkiekis = 0;
+                pasikartojimas = RandomList.random[i].sablonas.SablonoNr[0];
+                // Paruosimas
                 for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
                 {
                     if (RandomList.random[i].kiekis[j] != 0)
                     {
-                        if (RandomList.random[i].sablonas.SablonoNr[j] != pasikartojimas)
+                        if (maxkiekis < RandomList.random[i].kiekis[j])
+                        {
+                            maxkiekis = RandomList.random[i].kiekis[j];
+                        }
+                        if (RandomList.random[i].sablonas.SablonoNr[j] != pasikartojimas && j != RandomList.random[i].sablonas.SablonoElem.Count - 1)
                         {
                             pasikartojimas = RandomList.random[i].sablonas.SablonoNr[j];
-                            richTextBox2.AppendText("+-------------------------------------------------------------------------------------------------------------------------+" + '\n');
-                            richTextBox2.AppendText("Schemos Nr: " + RandomList.random[i].sablonas.SablonoNr[j].ToString().PadLeft(4 - RandomList.random[i].sablonas.SablonoNr[j].ToString().Length) + " | Rušys: ");
+                            if (max != 0)
+                            {
+                                kiekGaminti.Add(max);
+                            }
+                            max = 0;
+                        }
+                        int kiekg = 0;
+                        for (int h = 0; h < RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis.Count; h++)
+                        {
+                            if (RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h] != 0)
+                            {
+                                kiekg++;
+                            }
+                        }
+                        if (max < kiekg)
+                        {
+                            max = kiekg;
+                        }
+                    }
+                    if (j == RandomList.random[i].sablonas.SablonoElem.Count - 1 && max != 0)
+                    {
+                        kiekGaminti.Add(max);
+                    }
+                }
+                pasikartojimas = -1;
+                int lenteliusk = 0;
+                for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
+                {
+                    if (RandomList.random[i].kiekis[j] != 0)
+                    {
+                        // Aprasas
+                        if (RandomList.random[i].sablonas.SablonoNr[j] != pasikartojimas)
+                        {
+                            richTextBox2.AppendText("\n");
+                            pasikartojimas = RandomList.random[i].sablonas.SablonoNr[j];
+                            int ilgis = 13 + 5;
+                            linija = "+";
+                            for (int h = 0; h < ilgis; h++)
+                            {
+                                linija += "-";
+                            }
+                            linija += "+";
+                            ilgis = 7;
+                            for (int h = 0; h < AtrinktiTipai.Count; h++)
+                            {
+                                ilgis += AtrinktiTipai[h].Length + 2;
+                            }
+                            for (int h = 0; h < ilgis; h++)
+                            {
+                                linija += "-";
+                            }
+                            linija += "+";
+                            richTextBox2.AppendText(linija + '\n');
+                            richTextBox2.AppendText("| Schemos Nr: " + RandomList.random[i].sablonas.SablonoNr[j].ToString().PadLeft(4) + " | Rušys: ");
                             for (int h = 0; h < AtrinktiTipai.Count; h++)
                             {
                                 Color color = Color.FromArgb(Int32.Parse(AtrinktosSpalvos[h], System.Globalization.NumberStyles.HexNumber));
@@ -1031,12 +1134,36 @@ namespace WindowsFormsApplication1
                                     richTextBox2.AppendText(" |" + '\n');
                                 }
                             }
-                            richTextBox2.AppendText("+-------------------------------------------------------------------------------------------------------------------------+" + '\n');
-                            richTextBox2.AppendText("Kiek gaminti  | Ilgis * Kiekis |..................." + "\n");
-                            richTextBox2.AppendText("+----------------------------------------+------------------" + '\n');
+                            string lstring = "+--------------+";
+                            for (int h = 0; h < kiekGaminti[lenteliusk]; h++)
+                            {
+                                lstring += "----------------+";
+                            }
+                            lstring += "\n";
+                            richTextBox2.AppendText(lstring);
+                            richTextBox2.AppendText("| Kiek gaminti |".PadLeft(12));
+                            for (int h = 0; h < kiekGaminti[lenteliusk]; h++)
+                            {
+                                richTextBox2.AppendText(" Ilgis * Kiekis |");
+                            }
+                            richTextBox2.AppendText("\n");
+                            richTextBox2.AppendText(lstring);
+                            lenteliusk++;
                         }
-                        richTextBox2.AppendText(RandomList.random[i].kiekis[j].ToString().PadRight(20 - RandomList.random[i].kiekis[j].ToString().Length) + " | ");
+                        // Lentele
+                        string llstring = "";
+                        if (lenteliusk - 1 >= 0)
+                        {
+                            llstring = "+--------------+";
+                            for (int h = 0; h < kiekGaminti[lenteliusk - 1]; h++)
+                            {
+                                llstring += "----------------+";
+                            }
+                            llstring += "\n";
+                        }
+                        richTextBox2.AppendText("| " + RandomList.random[i].kiekis[j].ToString().PadRight(12) + " | ");
                         viso += RandomList.random[i].kiekis[j];
+                        int kartu = 0;
                         for (int h = 0; h < RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis.Count; h++ )
                         {
                             if (RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h] != 0)
@@ -1046,17 +1173,44 @@ namespace WindowsFormsApplication1
                                 richTextBox2.SelectionStart = richTextBox2.TextLength;
                                 richTextBox2.SelectionLength = 0;
                                 richTextBox2.SelectionColor = color;
-                                richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis[h].ToString().PadLeft(6 - RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis[h].ToString().Length) + " * ");
-                                richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().PadRight(9 - RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().Length) + " | ");
+                                richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis[h].ToString().PadLeft(5));
                                 richTextBox2.SelectionColor = richTextBox2.ForeColor;
+                                richTextBox2.AppendText(" * ");
+                                richTextBox2.SelectionStart = richTextBox2.TextLength;
+                                richTextBox2.SelectionLength = 0;
+                                richTextBox2.SelectionColor = color;
+                                richTextBox2.AppendText(RandomList.random[i].sablonas.SablonoElem[j].Kiekis[h].ToString().PadRight(6));
+                                richTextBox2.SelectionColor = richTextBox2.ForeColor;
+                                richTextBox2.AppendText(" | ");
+                                kartu++;
                             }
                         }
+                        for (int h = 0; h < kiekGaminti[lenteliusk - 1] - kartu; h++)
+                        {
+                            richTextBox2.AppendText("               | ");
+                        }
                         richTextBox2.AppendText("\n");
+                        richTextBox2.AppendText(llstring);
                     }
                 }
-                richTextBox2.AppendText("+-------------------------------------------------------------------------------------------------------------------------+" + '\n');
-                richTextBox2.AppendText("Viso detalių sukurta: " + viso);
+                richTextBox2.AppendText("Viso detalių sukurta: " + viso);               
             }
+        }
+        private void Form1_ResizeEnd(object sender, EventArgs e)
+        {
+            if (Form1.ActiveForm.Width < 696)
+            {
+                Form1.ActiveForm.Width = 696;
+            }
+            if (Form1.ActiveForm.Height < 419)
+            {
+                Form1.ActiveForm.Height = 419;
+            }
+            int aukstis = Form1.ActiveForm.Height - y;
+            int plotis = Form1.ActiveForm.Width - x;
+            richTextBox1.Height = 214 + aukstis;
+            richTextBox2.Height = 214 + aukstis;
+            richTextBox2.Width = 479 + plotis;
         }
     }
 }
