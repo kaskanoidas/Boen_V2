@@ -20,6 +20,7 @@ namespace WindowsFormsApplication1
         Elementas elem = new Elementas();
         Uzklausa problem = new Uzklausa();
         Uzklausa visoP = new Uzklausa();
+        Uzklausa problemOld = new Uzklausa();
         RandomElements RandomList = new RandomElements();
         List<string> AtrinktiTipai = new List<string> { };
         List<string> AtrinktosSpalvos = new List<string> { };
@@ -249,7 +250,8 @@ namespace WindowsFormsApplication1
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            //orginalFont = richTextBox2.Font;
+            button5.Visible = false;
+            DisableAll();
             richTextBox2.Font = new Font(FontFamily.GenericMonospace, richTextBox2.Font.Size);
             uzbaigti = false;
             button2.Enabled = true;
@@ -257,6 +259,8 @@ namespace WindowsFormsApplication1
             if (richTextBox1.Text == "")
             {
                 richTextBox2.Text = "Įveskite užsakymą.";
+                button2.Enabled = false;
+                EnableAll();
             }
             else
             {
@@ -266,7 +270,8 @@ namespace WindowsFormsApplication1
                 int nr = -1;
                 if (comboBox1.SelectedIndex == -1 || comboBox1.SelectedIndex == 0)
                 {
-                    nr = ReadTextBox();
+                    ReadTextBox();
+                    nr = RastiTinkamiausiaRusi();
                     if (nr != -1 && nr != -2)
                     {
                         richTextBox2.Text += "Rasta parketo rūšis:  " + duom.vardas[nr] + "\n";
@@ -274,46 +279,35 @@ namespace WindowsFormsApplication1
                 }
                 else
                 {
-                    ReadTextBox();
                     nr = comboBox1.SelectedIndex - 1;
+                    ReadTextBox();
+                    SalintiNetinkamusTipus(nr);
                     richTextBox2.Text += "Pasirinkta parketo rūšis:  " + duom.vardas[nr] + "\n";
                 }
                 if (nr != -1 && nr!= -2 && nr != -3)
                 {
                     AtrinktiSchemas(nr);
                     kill = false;
-                    AtrinktiTinkamusVariantus(nr);
-                    if (sabl.SablonoNr.Count == 0 || kill == true)
-                    {
-                        richTextBox2.Text += "Pasirinkta parketo rūšis netinkama (nerasta tinkamų schemų)";
-                        button1.Enabled = true;
-                    }
-                    else
-                    {
-                        PrintSchemas();
-                        BackgroundWorker bw = new BackgroundWorker();
-                        bw.WorkerSupportsCancellation = true;
-                        bw.WorkerReportsProgress = true;
-                        bw.DoWork += new DoWorkEventHandler(bw_DoWork);
-                        bw.ProgressChanged += new ProgressChangedEventHandler(bw_ProgressChanged);
-                        bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
-                        //richTextBox2.Text += "Pradetas evo dauginimas su variantu: " + subsabl.SablonoSubNr.Count + '\n';
-                        //test();
-                        if (bw.IsBusy != true)
-                        {
-                            bw.RunWorkerAsync();
-                        }
-                    }
+                    BackgroundWorker bwVar = new BackgroundWorker();
+                    bwVar.WorkerSupportsCancellation = true;
+                    bwVar.WorkerReportsProgress = true;
+                    bwVar.DoWork += new DoWorkEventHandler(bwVar_DoWork);
+                    bwVar.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bwVar_RunWorkerCompleted);
+                    bwVar.RunWorkerAsync(nr);
                 }
                 else if (nr == -2)
                 {
+                    EnableAll();
                     richTextBox2.Text = "Blogas užsakymo formulavimas.";
                     button1.Enabled = true;
+                    button2.Enabled = false;
                 }
                 else if (nr == -1)
                 {
+                    EnableAll();
                     richTextBox2.Text += "Nerasta parketo rūšis.";
                     button1.Enabled = true;
+                    button2.Enabled = false;
                 }
             }
         }
@@ -322,10 +316,14 @@ namespace WindowsFormsApplication1
             problem = new Uzklausa();
             visoP = new Uzklausa();
             RandomList = new RandomElements();
+            problemOld = new Uzklausa();
         }
         private int ReadTextBox()
         {
             string[] text = richTextBox1.Text.Split('\n');
+            string tipas;
+            int ilgis;
+            int kiekis;
             for (int i = 0; i < text.Length; i++)
             {
                 string[] eilute = text[i].Split();
@@ -333,21 +331,35 @@ namespace WindowsFormsApplication1
                 {
                     return -2;
                 }
-                problem.tipai.Add(eilute[0]);
+                tipas = eilute[0];
                 int del = 0;
                 if (int.TryParse(eilute[1], out del) == false)
                 {
                     return -2;
                 }
-                problem.ilgis.Add(int.Parse(eilute[1]));
+                ilgis = int.Parse(eilute[1]);
                 if (int.TryParse(eilute[2], out del) == false)
                 {
                     return -2;
                 }
-                problem.kiekis.Add(int.Parse(eilute[2]));
+                kiekis = int.Parse(eilute[2]);
+                Boolean rado = false;
+                for (int j = 0; j < problem.tipai.Count; j++)
+                {
+                    if (problem.tipai[j] == tipas && problem.ilgis[j] == ilgis)
+                    {
+                        problem.kiekis[j] += kiekis;
+                        rado = true;
+                    }
+                }
+                if (rado == false)
+                {
+                    problem.tipai.Add(eilute[0]);
+                    problem.ilgis.Add(int.Parse(eilute[1]));
+                    problem.kiekis.Add(int.Parse(eilute[2]));
+                }
             }
-            int NR = RastiTinkamiausiaRusi();
-            return NR;
+            return 0;
         }
         private int RastiTinkamiausiaRusi()
         {
@@ -382,7 +394,6 @@ namespace WindowsFormsApplication1
             for (int i = 0; i < AtrinktuSumos.Count; i++)
             {
                 double sant = Convert.ToDouble(AtrinktuSumos[i]) / Convert.ToDouble(suma);
-                problem.santykis.Add(sant);
                 visoP.santykis.Add(sant);
             }
             double santykis = Convert.ToDouble(AtrinktuSumos[0]) / Convert.ToDouble(suma);
@@ -422,6 +433,47 @@ namespace WindowsFormsApplication1
                 }
             }
             return mn;
+        }
+        private void SalintiNetinkamusTipus(int RusiesNR)
+        {
+            problemOld = new Uzklausa();
+            Uzklausa problemBack = new Uzklausa();
+            AtrinktiTipai = new List<string> { };
+            for (int i = 0; i < duom.Rus[RusiesNR].pav.Count; i++)
+            {
+                AtrinktiTipai.Add(duom.Rus[RusiesNR].pav[i]);
+            }
+            for (int i = 0; i < problem.tipai.Count; i++)
+            {
+                Boolean rado = false;
+                for (int j = 0; j < duom.Rus[RusiesNR].pav.Count; j++)
+                {
+                    if (problem.tipai[i] == duom.Rus[RusiesNR].pav[j])
+                    {
+                        rado = true;
+                    }
+                }
+                if (rado == true)
+                {
+                    problemBack.ilgis.Add(problem.ilgis[i]);
+                    problemBack.kiekis.Add(problem.kiekis[i]);
+                    problemBack.tipai.Add(problem.tipai[i]);
+                }
+                else
+                {
+                    problemOld.ilgis.Add(problem.ilgis[i]);
+                    problemOld.kiekis.Add(problem.kiekis[i]);
+                    problemOld.tipai.Add(problem.tipai[i]);
+                }
+            }
+            problem = problemBack;
+            for (int i = 0; i < problem.ilgis.Count; i++)
+            {
+                if (visoP.ilgis.IndexOf(problem.ilgis[i]) < 0)
+                {
+                    visoP.ilgis.Add(problem.ilgis[i]);
+                }
+            }
         }
         private int TikrintiPasirinkima(int nr)
         {
@@ -474,6 +526,34 @@ namespace WindowsFormsApplication1
                 richTextBox2.Text += sabl.SablonoNr[i] + " ";
             }
             richTextBox2.Text += "\n";
+        }
+        private void bwVar_DoWork(object sender, DoWorkEventArgs e)
+        {
+            AtrinktiTinkamusVariantus((int)e.Argument);
+        }
+        private void bwVar_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (sabl.SablonoNr.Count == 0 || kill == true)
+            {
+                richTextBox2.Text += "Pasirinkta parketo rūšis netinkama (nerasta tinkamų schemų)";
+                button1.Enabled = true;
+                button2.Enabled = false;
+                EnableAll();
+            }
+            else
+            {
+                PrintSchemas();
+                BackgroundWorker bw = new BackgroundWorker();
+                bw.WorkerSupportsCancellation = true;
+                bw.WorkerReportsProgress = true;
+                bw.DoWork += new DoWorkEventHandler(bw_DoWork);
+                bw.ProgressChanged += new ProgressChangedEventHandler(bw_ProgressChanged);
+                bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bw_RunWorkerCompleted);
+                if (bw.IsBusy != true)
+                {
+                    bw.RunWorkerAsync();
+                }
+            }
         }
         private void AtrinktiTinkamusVariantus(int parketoRusis)
         {
@@ -625,42 +705,6 @@ namespace WindowsFormsApplication1
             }
         }
         // Pagrindinis skaičiavimas ir rezultatų spausdinimas:
-        private void test()
-        {
-            int t = 10; int c = t - 1; int k = 30; // 30
-            int kiekis = k * subsabl.SablonoSubNr.Count;
-            int kiek = 0;
-            richTextBox2.Text += "Workers create => ";
-            KurtiWorkers(k);
-            richTextBox2.Text += "Workers end" + '\n';
-            richTextBox2.Text += "Fabrikas create => ";
-            StartThreads("NykstukuFabrikas", subsabl.SablonoSubNr.Count, k);
-            richTextBox2.Text += "Fabrikas end"+ '\n';
-            Testing(t);
-            int min = 0;
-
-            while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false)
-            {
-                StartThreads("Clone", 1, c);
-                Testing(t);
-                if (RandomList.random[0].pagamintaDetaliu > min)
-                {
-                    min = RandomList.random[0].pagamintaDetaliu;
-                    kiek = 0;
-                }
-                if (RandomList.random[0].pagamintaDetaliu == min)
-                {
-                    kiek++;
-                }
-                if (RandomList.random[0].pagamintaDetaliu < min)
-                {
-                    kiek = 0;
-                }
-                SukurtuSkaicius = RandomList.random[0].pagamintaDetaliu;
-            }
-            Print();
-            button1.Enabled = true;
-        }
         private void bw_DoWork(object sender, DoWorkEventArgs e)//MAIN
         {
             BackgroundWorker worker = sender as BackgroundWorker;
@@ -761,6 +805,11 @@ namespace WindowsFormsApplication1
         {
             Print();
             button1.Enabled = true;
+            EnableAll();
+            if (RandomList.random.Count > 0)
+            {
+                button5.Visible = true;
+            }
         }
         private void button2_Click(object sender, EventArgs e)
         {
@@ -1030,6 +1079,21 @@ namespace WindowsFormsApplication1
                         KiekioIlgis = RandomList.random[i].suma[j].ToString().Length;
                     }
                 }
+                for (int j = 0; j < problemOld.kiekis.Count; j++)
+                {
+                    if (RusiesIlgis < problemOld.tipai[j].Trim().Length)
+                    {
+                        RusiesIlgis = problemOld.tipai[j].Trim().Length;
+                    }
+                    if (IlgioIlgis < problemOld.ilgis[j].ToString().Length)
+                    {
+                        IlgioIlgis = problemOld.ilgis[j].ToString().ToString().Length;
+                    }
+                    if (KiekioIlgis < problemOld.kiekis[j].ToString().Length)
+                    {
+                        KiekioIlgis = problemOld.kiekis[j].ToString().Length;
+                    }
+                }
                 richTextBox2.AppendText("Liekana išskirsčius po schemas: " + RandomList.random[i].liekana + "\n");
                 string lentele = "|  " + "Rūšis".PadRight(RusiesIlgis) + "  |  " + "Ilgis".PadRight(IlgioIlgis) + "  |  " + "Kiekis".PadRight(KiekioIlgis) + "  |";
                 string linija = "+";
@@ -1042,6 +1106,10 @@ namespace WindowsFormsApplication1
                 for (int j = 0; j < RandomList.random[i].suma.Count; j++)
                 {
                     richTextBox2.AppendText("|  " + RandomList.random[i].tipas[j].PadRight(RusiesIlgis) + "  |  " + RandomList.random[i].ilgis[j].ToString().PadRight(IlgioIlgis) + "  |  " + RandomList.random[i].suma[j].ToString().PadRight(KiekioIlgis) + "  |" + "\n");
+                }
+                for (int j = 0; j < problemOld.kiekis.Count; j++)
+                {
+                    richTextBox2.AppendText("|  " + problemOld.tipai[j].PadRight(RusiesIlgis) + "  |  " + problemOld.ilgis[j].ToString().PadRight(IlgioIlgis) + "  |  " + problemOld.kiekis[j].ToString().PadRight(KiekioIlgis) + "  |" + "\n");
                 }
                 richTextBox2.AppendText(linija + '\n');
                 // Schemu lentele
@@ -1198,19 +1266,57 @@ namespace WindowsFormsApplication1
         }
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
-            if (Form1.ActiveForm.Width < 696)
+            Boolean rado = false;
+            foreach (Form frm in Application.OpenForms)
             {
-                Form1.ActiveForm.Width = 696;
+                if(frm.Equals(Form1.ActiveForm) == true)
+                {
+                    rado = true;
+                }
             }
-            if (Form1.ActiveForm.Height < 419)
+            if (rado == true)
             {
-                Form1.ActiveForm.Height = 419;
+                int aukstis = Form1.ActiveForm.Height - y;
+                int plotis = Form1.ActiveForm.Width - x;
+                richTextBox1.Height = 214 + aukstis;
+                richTextBox2.Height = 214 + aukstis;
+                richTextBox2.Width = 479 + plotis;
             }
-            int aukstis = Form1.ActiveForm.Height - y;
-            int plotis = Form1.ActiveForm.Width - x;
-            richTextBox1.Height = 214 + aukstis;
-            richTextBox2.Height = 214 + aukstis;
-            richTextBox2.Width = 479 + plotis;
+        }
+        private void button5_Click(object sender, EventArgs e)
+        {
+            richTextBox1.Text = "";
+            for (int i = 0; i < RandomList.random[0].ilgis.Count; i++)
+            {
+                richTextBox1.Text += RandomList.random[0].tipas[i] + " " + RandomList.random[0].ilgis[i] + " " + RandomList.random[0].suma[i];
+                if (i != RandomList.random[0].ilgis.Count - 1)
+                {
+                    richTextBox1.Text += "\n";
+                }
+            }
+            for (int j = 0; j < problemOld.ilgis.Count; j++)
+            {
+                richTextBox1.Text += "\n";
+                richTextBox1.AppendText(problemOld.tipai[j] + " " + problemOld.ilgis[j] + " " + problemOld.kiekis[j]);
+            }
+        }
+        private void DisableAll()
+        {
+            comboBox1.Enabled = false;
+            comboBox2.Enabled = false;
+            comboBox3.Enabled = false;
+            textBox1.Enabled = false;
+            button3.Enabled = false;
+            button4.Enabled = false;
+        }
+        private void EnableAll()
+        {
+            comboBox1.Enabled = true;
+            comboBox2.Enabled = true;
+            comboBox3.Enabled = true;
+            textBox1.Enabled = true;
+            button3.Enabled = true;
+            button4.Enabled = true;
         }
     }
 }
