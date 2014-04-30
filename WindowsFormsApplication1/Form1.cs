@@ -439,10 +439,6 @@ namespace WindowsFormsApplication1
             problemOld = new Uzklausa();
             Uzklausa problemBack = new Uzklausa();
             AtrinktiTipai = new List<string> { };
-            for (int i = 0; i < duom.Rus[RusiesNR].pav.Count; i++)
-            {
-                AtrinktiTipai.Add(duom.Rus[RusiesNR].pav[i]);
-            }
             for (int i = 0; i < problem.tipai.Count; i++)
             {
                 Boolean rado = false;
@@ -472,6 +468,13 @@ namespace WindowsFormsApplication1
                 if (visoP.ilgis.IndexOf(problem.ilgis[i]) < 0)
                 {
                     visoP.ilgis.Add(problem.ilgis[i]);
+                }
+            }
+            for (int i = 0; i < problem.tipai.Count; i++) // duom.Rus[RusiesNR].pav.Count
+            {
+                if (AtrinktiTipai.IndexOf(problem.tipai[i]) < 0)
+                {
+                    AtrinktiTipai.Add(problem.tipai[i]);
                 }
             }
         }
@@ -1094,7 +1097,12 @@ namespace WindowsFormsApplication1
                         KiekioIlgis = problemOld.kiekis[j].ToString().Length;
                     }
                 }
-                richTextBox2.AppendText("Liekana išskirsčius po schemas: " + RandomList.random[i].liekana + "\n");
+                int liekana = RandomList.random[i].liekana;
+                for (int l = 0; l < problemOld.kiekis.Count; l++)
+                {
+                    liekana += problemOld.kiekis[l];
+                }
+                richTextBox2.AppendText("Liekana išskirsčius po schemas: " + liekana + "\n");
                 string lentele = "|  " + "Rūšis".PadRight(RusiesIlgis) + "  |  " + "Ilgis".PadRight(IlgioIlgis) + "  |  " + "Kiekis".PadRight(KiekioIlgis) + "  |";
                 string linija = "+";
                 for (int j = 0; j < lentele.Length -2; j++)
@@ -1263,6 +1271,9 @@ namespace WindowsFormsApplication1
                 }
                 richTextBox2.AppendText("Viso detalių sukurta: " + viso);               
             }
+            richTextBox2.SelectionStart = 0;
+            richTextBox2.SelectionLength = 0;
+            richTextBox2.ScrollToCaret();
         }
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
