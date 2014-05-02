@@ -67,7 +67,6 @@ namespace WindowsFormsApplication1
         }
         private void GetRusisDuomenys()
         {
-            comboBox1.Items.Add("<Surasti automatiškai>");
             string location = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase) + "\\Rusys.txt";
             location = location.Substring(6);
             System.IO.StreamReader file = new System.IO.StreamReader(location);
@@ -267,48 +266,18 @@ namespace WindowsFormsApplication1
                 button1.Enabled = false;
                 richTextBox2.Text = "";
                 Reset();
-                int nr = -1;
-                if (comboBox1.SelectedIndex == -1 || comboBox1.SelectedIndex == 0)
-                {
-                    ReadTextBox();
-                    nr = RastiTinkamiausiaRusi();
-                    if (nr != -1 && nr != -2)
-                    {
-                        richTextBox2.Text += "Rasta parketo rūšis:  " + duom.vardas[nr] + "\n";
-                    }
-                }
-                else
-                {
-                    nr = comboBox1.SelectedIndex - 1;
-                    ReadTextBox();
-                    SalintiNetinkamusTipus(nr);
-                    richTextBox2.Text += "Pasirinkta parketo rūšis:  " + duom.vardas[nr] + "\n";
-                }
-                if (nr != -1 && nr!= -2 && nr != -3)
-                {
-                    AtrinktiSchemas(nr);
-                    kill = false;
-                    BackgroundWorker bwVar = new BackgroundWorker();
-                    bwVar.WorkerSupportsCancellation = true;
-                    bwVar.WorkerReportsProgress = true;
-                    bwVar.DoWork += new DoWorkEventHandler(bwVar_DoWork);
-                    bwVar.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bwVar_RunWorkerCompleted);
-                    bwVar.RunWorkerAsync(nr);
-                }
-                else if (nr == -2)
-                {
-                    EnableAll();
-                    richTextBox2.Text = "Blogas užsakymo formulavimas.";
-                    button1.Enabled = true;
-                    button2.Enabled = false;
-                }
-                else if (nr == -1)
-                {
-                    EnableAll();
-                    richTextBox2.Text += "Nerasta parketo rūšis.";
-                    button1.Enabled = true;
-                    button2.Enabled = false;
-                }
+                int nr = comboBox1.SelectedIndex;
+                ReadTextBox();
+                SalintiNetinkamusTipus(nr);
+                richTextBox2.Text += "Pasirinkta parketo rūšis:  " + duom.vardas[nr] + "\n";
+                AtrinktiSchemas(nr);
+                kill = false;
+                BackgroundWorker bwVar = new BackgroundWorker();
+                bwVar.WorkerSupportsCancellation = true;
+                bwVar.WorkerReportsProgress = true;
+                bwVar.DoWork += new DoWorkEventHandler(bwVar_DoWork);
+                bwVar.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bwVar_RunWorkerCompleted);
+                bwVar.RunWorkerAsync(nr);
             }
         }
         private void Reset()
@@ -361,79 +330,6 @@ namespace WindowsFormsApplication1
             }
             return 0;
         }
-        private int RastiTinkamiausiaRusi()
-        {
-            AtrinktiTipai = new List<string> { };
-            AtrinktuSumos = new List<int> { };
-            for (int i = 0; i < problem.ilgis.Count; i++)
-            {
-                if (AtrinktiTipai.IndexOf(problem.tipai[i]) < 0)
-                {
-                    AtrinktiTipai.Add(problem.tipai[i]);
-                    AtrinktuSumos.Add(problem.kiekis[i] * problem.ilgis[i]);
-                }
-                else
-                {
-                    AtrinktuSumos[AtrinktiTipai.IndexOf(problem.tipai[i])] += problem.kiekis[i] * problem.ilgis[i];
-                }
-                if (visoP.ilgis.IndexOf(problem.ilgis[i]) < 0)
-                {
-                    visoP.ilgis.Add(problem.ilgis[i]);
-                    visoP.kiekis.Add(problem.kiekis[i]);
-                }
-                else
-                {
-                    visoP.kiekis[visoP.ilgis.IndexOf(problem.ilgis[i])] += problem.kiekis[i];
-                }
-            }
-            int suma = 0;
-            for (int i = 0; i < AtrinktuSumos.Count; i++)
-            {
-                suma += AtrinktuSumos[i];
-            }
-            for (int i = 0; i < AtrinktuSumos.Count; i++)
-            {
-                double sant = Convert.ToDouble(AtrinktuSumos[i]) / Convert.ToDouble(suma);
-                visoP.santykis.Add(sant);
-            }
-            double santykis = Convert.ToDouble(AtrinktuSumos[0]) / Convert.ToDouble(suma);
-            double ApvalintasSantykis = Math.Round(santykis * 100, 0); // kiek po kableliu galima keisti
-            List<Rusis> RusisAtrinkimui = new List<Rusis> { };
-            double min = 99999; int mn = -1;
-            for (int i = 0; i < duom.Rus.Count; i++)
-            {
-                if (duom.Rus[i].pav.Count == AtrinktiTipai.Count)
-                {
-                    int count = 0;
-                    for (int j = 0; j < duom.Rus[i].pav.Count; j++)
-                    {
-
-                        if (AtrinktiTipai.IndexOf(duom.Rus[i].pav[j]) >= 0)
-                        {
-                            count++;
-                        }
-                    }
-                    if (count == AtrinktiTipai.Count)
-                    {
-                        double pradzia = duom.Rus[i].pradzia[duom.Rus[i].pav.IndexOf(AtrinktiTipai[0])];
-                        double pabaiga = duom.Rus[i].pabaiga[duom.Rus[i].pav.IndexOf(AtrinktiTipai[0])];
-                        if (pradzia <= ApvalintasSantykis && pabaiga >= ApvalintasSantykis)
-                        {
-                            return i;
-                        }
-                        else
-                        {
-                            if (Math.Min(pradzia - ApvalintasSantykis, ApvalintasSantykis - pabaiga) < min)
-                            {
-                                min = Math.Min(pradzia - ApvalintasSantykis, ApvalintasSantykis - pabaiga);
-                                mn = i;
-                            }
-                        }
-                    }
-                }
-            }
-            return mn;
-        }
         private void SalintiNetinkamusTipus(int RusiesNR)
         {
             problemOld = new Uzklausa();
@@ -477,26 +373,6 @@ namespace WindowsFormsApplication1
                     AtrinktiTipai.Add(problem.tipai[i]);
                 }
             }
-        }
-        private int TikrintiPasirinkima(int nr)
-        {
-            if (duom.Rus[nr].pav.Count == AtrinktiTipai.Count)
-            {
-                int count = 0;
-                for (int j = 0; j < duom.Rus[nr].pav.Count; j++)
-                {
-
-                    if (AtrinktiTipai.IndexOf(duom.Rus[nr].pav[j]) >= 0)
-                    {
-                        count++;
-                    }
-                }
-                if (count == AtrinktiTipai.Count)
-                {
-                        return nr;
-                }
-            }
-            return -1;
         }
         private void AtrinktiSchemas(int RusiesNR)
         {
@@ -638,14 +514,12 @@ namespace WindowsFormsApplication1
                         Lks.Add(ks);
                     }
                     Boolean tinka = true;
-                    Boolean isimtis = false;
                     for (int s = 0; s < AtrinktiTipai.Count; s++)
                     {
                         int n = duom.Rus[parketoRusis].KoDeti.IndexOf(AtrinktiTipai[s]);
                         int k = 0;
                         if (n >= 0)
                         {
-                            isimtis = true;
                             for (int i = 0; i < kiekiai.Count; i++)
                             {
                                 k += Lks[i][s];
@@ -711,20 +585,16 @@ namespace WindowsFormsApplication1
         private void bw_DoWork(object sender, DoWorkEventArgs e)//MAIN
         {
             BackgroundWorker worker = sender as BackgroundWorker;
-            int t = 10; int c = t - 1; int k = 30; // 30
-            int kiekis = k * sabl.SablonoNr.Count * 10;//subsabl.SablonoSubNr.Count;
+            int t = 10; int c = t - 1; int k = 30;
+            int kiekis = k * sabl.SablonoNr.Count * 10;
             int kiek = 0; int SUMA = 0;
+            int stabdyti = Math.Max(1,Convert.ToInt32(Math.Round(Convert.ToDouble(30000) / Convert.ToDouble(subsabl.SablonoSubNr.Count))));
+            worker.ReportProgress(0);
             KurtiWorkers(k);
-            worker.ReportProgress(SUMA);
-            StartThreads("NykstukuFabrikas", sabl.SablonoNr.Count * 10, k); // subsabl.SablonoSubNr.Count;
+            StartThreads("NykstukuFabrikas", sabl.SablonoNr.Count * 10, k);
             Testing(t);
             int min = 0;
-            worker.ReportProgress(SUMA++);
-
-            //StartThreads("Clone", 1, c);
-            //Testing(t);
-
-            while (kiek < Convert.ToInt32(textBox2.Text) && uzbaigti == false)
+            while (kiek < stabdyti && uzbaigti == false)
             {
                 StartThreads("Clone", 1, c);
                 Testing(t);
@@ -742,7 +612,11 @@ namespace WindowsFormsApplication1
                     kiek = 0;
                 }
                 SukurtuSkaicius = RandomList.random[0].pagamintaDetaliu;
-                worker.ReportProgress(SUMA++);
+                if (RandomList.random[0].liekana == 0 || RandomList.random[0].pagamintaDetaliu == 0) // negerai nes liekana 0 != daugiausiai pagaminta detaliu?  || RandomList.random[0].pagamintaDetaliu == 0
+                {
+                    uzbaigti = true;
+                }
+                worker.ReportProgress(Convert.ToInt32(Math.Round(Convert.ToDouble(kiek) / Convert.ToDouble(stabdyti) * 100)));
             }
         }
         private void KurtiWorkers(int k)
@@ -758,7 +632,7 @@ namespace WindowsFormsApplication1
                 Helpers.Add(bwk);
             }
         }
-        private void StartThreads(string Tipas, int count, int threads)
+        private void StartThreads(string Tipas, int count, int threads) // VIVACE ir kiti greiti BUSY THREADS, PER GREITAI?
         {
             counter = new ConcurrentStack<int> { };
             threadCount = threads;
@@ -766,6 +640,10 @@ namespace WindowsFormsApplication1
             HelperList = new ConcurrentStack<RandomiserClass> { };
             for (int i = 0; i < threadCount; i++)
             {
+                while (Helpers[i].IsBusy == true)
+                {
+
+                }
                 Helpers[i].RunWorkerAsync(count);
             }
             _resetEvent.WaitOne();
@@ -801,7 +679,7 @@ namespace WindowsFormsApplication1
         private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             int kiek = e.ProgressPercentage;
-            label3.Text = "Iteracijų skaičius: " + kiek;
+            label3.Text = "Darbo eiga: " + kiek + "%";
             label10.Text = "Sukurtų detalių skaičius: " + SukurtuSkaicius;
         }
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -809,6 +687,7 @@ namespace WindowsFormsApplication1
             Print();
             button1.Enabled = true;
             EnableAll();
+            label10.Text = "Sukurtų detalių skaičius: " + SukurtuSkaicius;
             if (RandomList.random.Count > 0)
             {
                 button5.Visible = true;
@@ -943,8 +822,8 @@ namespace WindowsFormsApplication1
         {
             Random r = new Random();
             RandomiserClass Randomiser = new RandomiserClass();
-            int pradiniai = RandomList.random.Count;
-            for (int i = 0; i < pradiniai; i++)
+            //int pradiniai = RandomList.random.Count;
+            for (int i = 0; i < RandomList.random.Count; i++)
             {
                 for (int kiek = 0; kiek < kiekis; kiek++)
                 {
@@ -1049,7 +928,7 @@ namespace WindowsFormsApplication1
                     }
                     Randomiser.pagamintaDetaliu = pagaminta;
 
-                    HelperList.Push(Randomiser);//RandomList.random.Add(Randomiser);
+                    HelperList.Push(Randomiser);
                 }
             }
         }
@@ -1124,26 +1003,24 @@ namespace WindowsFormsApplication1
                 int viso = 0;
                 int pasikartojimas = -1;
                 List<int> kiekGaminti = new List<int> { };
-                int max = 0;
+                List<int> KoGaminti = new List<int> { };
                 int maxkiekis = 0;
-                pasikartojimas = RandomList.random[i].sablonas.SablonoNr[0];
+                //pasikartojimas = RandomList.random[i].sablonas.SablonoNr[0];
                 // Paruosimas
-                for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
+                for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++) // TEST
                 {
                     if (RandomList.random[i].kiekis[j] != 0)
                     {
-                        if (maxkiekis < RandomList.random[i].kiekis[j])
+                        int index = -1;
+                        if (KoGaminti.IndexOf(RandomList.random[i].sablonas.SablonoNr[j]) < 0)
                         {
-                            maxkiekis = RandomList.random[i].kiekis[j];
+                            KoGaminti.Add(RandomList.random[i].sablonas.SablonoNr[j]);
+                            kiekGaminti.Add(0);
+                            index = KoGaminti.Count - 1;
                         }
-                        if (RandomList.random[i].sablonas.SablonoNr[j] != pasikartojimas && j != RandomList.random[i].sablonas.SablonoElem.Count - 1)
+                        else
                         {
-                            pasikartojimas = RandomList.random[i].sablonas.SablonoNr[j];
-                            if (max != 0)
-                            {
-                                kiekGaminti.Add(max);
-                            }
-                            max = 0;
+                            index = KoGaminti.IndexOf(RandomList.random[i].sablonas.SablonoNr[j]);
                         }
                         int kiekg = 0;
                         for (int h = 0; h < RandomList.random[i].sablonas.SablonoElem[j].JuostIlgis.Count; h++)
@@ -1153,17 +1030,17 @@ namespace WindowsFormsApplication1
                                 kiekg++;
                             }
                         }
-                        if (max < kiekg)
+                        if (kiekGaminti[index] < kiekg)
                         {
-                            max = kiekg;
+                            kiekGaminti[index] = kiekg;
                         }
-                    }
-                    if (j == RandomList.random[i].sablonas.SablonoElem.Count - 1 && max != 0)
-                    {
-                        kiekGaminti.Add(max);
+                        if (maxkiekis < RandomList.random[i].kiekis[j])
+                        {
+                            maxkiekis = RandomList.random[i].kiekis[j];
+                        }  
                     }
                 }
-                pasikartojimas = -1;
+                //pasikartojimas = -1;
                 int lenteliusk = 0;
                 for (int j = 0; j < RandomList.random[i].sablonas.SablonoElem.Count; j++)
                 {
@@ -1319,6 +1196,8 @@ namespace WindowsFormsApplication1
             textBox1.Enabled = false;
             button3.Enabled = false;
             button4.Enabled = false;
+            richTextBox1.Enabled = false;
+            richTextBox2.Enabled = false;
         }
         private void EnableAll()
         {
@@ -1328,6 +1207,8 @@ namespace WindowsFormsApplication1
             textBox1.Enabled = true;
             button3.Enabled = true;
             button4.Enabled = true;
+            richTextBox1.Enabled = true;
+            richTextBox2.Enabled = true;
         }
     }
 }
