@@ -37,8 +37,6 @@ namespace WindowsFormsApplication1
         List<BackgroundWorker> Helpers = new List<BackgroundWorker> { };
         ConcurrentStack<RandomiserClass> HelperList = new ConcurrentStack<RandomiserClass> { };
         ConcurrentStack<int> counter = new ConcurrentStack<int> { };
-        int threadCount;
-        string ThreadinimuiTipas;
         private AutoResetEvent _resetEvent = new AutoResetEvent(false);
         int x;
         int y;
@@ -584,7 +582,7 @@ namespace WindowsFormsApplication1
         private void bw_DoWork(object sender, DoWorkEventArgs e)//MAIN
         {
             BackgroundWorker worker = sender as BackgroundWorker;
-
+            RastiVisusVariantus();
             worker.ReportProgress(0);
         }
         private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -604,6 +602,35 @@ namespace WindowsFormsApplication1
             {
                 button5.Visible = true;
             }
+        }
+        private void RastiVisusVariantus()
+        {
+            List<int> inputSet = new List<int> { };
+            int max = 0;
+            for (int i = 0; i < subsabl.SablonoSubNr.Count; i++)
+            {
+                for (int j = 0; j < subsabl.SablonoElem[i].Kiekis.Count; j++)
+                {
+                    int kiek = 0;
+                    for(int h = 0; h < problem.ilgis.Count; h++)
+                    {
+                        if (problem.ilgis[h] == subsabl.SablonoElem[i].JuostIlgis[j] && problem.tipai[h] == subsabl.SablonoElem[i].JuostTipas[j])
+                        {
+                            kiek = Convert.ToInt32(Math.Floor(Convert.ToDouble(problem.kiekis[h]) / Convert.ToDouble(subsabl.SablonoElem[i].Kiekis[j])));
+                        }
+                    }
+                    if (max < kiek)
+                    {
+                        max = kiek;
+                    }
+                }
+            }
+            for (int i = 0; i < max + 1; i++)
+            {
+                inputSet.Add(i);
+            }
+            Combinations<int> combinations = new Combinations<int>(inputSet, subsabl.SablonoSubNr.Count, GenerateOption.WithRepetition);
+            //rekursiveKurimas(0, SablonoNr, parketoRusis);
         }
         private void button2_Click(object sender, EventArgs e)
         {
