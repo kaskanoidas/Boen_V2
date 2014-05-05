@@ -19,9 +19,9 @@ namespace WindowsFormsApplication1
         Sablonai sabl = new Sablonai();
         Elementas elem = new Elementas();
         Uzklausa problem = new Uzklausa();
-        Uzklausa visoP = new Uzklausa();
+        Uzklausa visoP = new Uzklausa(); // mesti?
         Uzklausa problemOld = new Uzklausa();
-        RandomElements RandomList = new RandomElements();
+        RandomElements RandomList = new RandomElements(); // pakeisti???
         List<string> AtrinktiTipai = new List<string> { };
         List<string> AtrinktosSpalvos = new List<string> { };
         List<int> AtrinktuSumos = new List<int> { };
@@ -40,6 +40,14 @@ namespace WindowsFormsApplication1
         private AutoResetEvent _resetEvent = new AutoResetEvent(false);
         int x;
         int y;
+        int KombinacijuSkaicius;
+        List<int> input = new List<int> { };
+        List<int> DabartinesInputReiksmes = new List<int> { };
+        List<int> GeriausiaReiksme = new List<int> { };
+        int GeriausioDetaliuSkaicius;
+        List<int> GeriausioLiekanos = new List<int> { };
+        List<int> Liekanos = new List<int> { };
+        BackgroundWorker worker;
         // Pradinių duomenų gavimas ir apdorojimas:
         public Form1()
         {
@@ -581,23 +589,23 @@ namespace WindowsFormsApplication1
         // Pagrindinis skaičiavimas ir rezultatų spausdinimas:
         private void bw_DoWork(object sender, DoWorkEventArgs e)//MAIN
         {
-            BackgroundWorker worker = sender as BackgroundWorker;
+            worker = sender as BackgroundWorker;
             RastiVisusVariantus();
-            worker.ReportProgress(0);
+            KombinacijuSkaicius = GeriausiaReiksme.Count;
+            ParuostiSpausdinimui();
         }
         private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             int kiek = e.ProgressPercentage;
-            label3.Text = "Darbo eiga: " + kiek + "%";
+            label3.Text = "Atlikta darbo: " + kiek + " / " + input[0];
             label10.Text = "Sukurtų detalių skaičius: " + SukurtuSkaicius;
         }
         private void bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            richTextBox2.Text += "Skirtingu variantu: " + subsabl.SablonoSubNr.Count + "\n";
+            label10.Text = "Galutinis sukurtų detalių skaičius: " + SukurtuSkaicius;
             Print();
             button1.Enabled = true;
             EnableAll();
-            label10.Text = "Sukurtų detalių skaičius: " + SukurtuSkaicius;
             if (RandomList.random.Count > 0)
             {
                 button5.Visible = true;
@@ -605,8 +613,10 @@ namespace WindowsFormsApplication1
         }
         private void RastiVisusVariantus()
         {
+            GeriausioDetaliuSkaicius = 0;
             List<int> inputSet = new List<int> { };
-            int max = 0;
+            DabartinesInputReiksmes = new List<int> { };
+            int max = 0;//int min = 99999;//int max = 0;
             for (int i = 0; i < subsabl.SablonoSubNr.Count; i++)
             {
                 for (int j = 0; j < subsabl.SablonoElem[i].Kiekis.Count; j++)
@@ -616,21 +626,136 @@ namespace WindowsFormsApplication1
                     {
                         if (problem.ilgis[h] == subsabl.SablonoElem[i].JuostIlgis[j] && problem.tipai[h] == subsabl.SablonoElem[i].JuostTipas[j])
                         {
-                            kiek = Convert.ToInt32(Math.Floor(Convert.ToDouble(problem.kiekis[h]) / Convert.ToDouble(subsabl.SablonoElem[i].Kiekis[j])));
+                            if (subsabl.SablonoElem[i].Kiekis[j] != 0)
+                            {
+                                kiek = Convert.ToInt32(Math.Floor(Convert.ToDouble(problem.kiekis[h]) / Convert.ToDouble(subsabl.SablonoElem[i].Kiekis[j])));
+                            }
                         }
                     }
-                    if (max < kiek)
+                    if (max < kiek)//if(min > kiek && kiek > 0)//if (max < kiek)
                     {
-                        max = kiek;
+                       max = kiek; //min = kiek;//max = kiek;
+                    }
+                }
+                inputSet.Add(max);//inputSet.Add(min);//inputSet.Add(max);
+                DabartinesInputReiksmes.Add(0);
+            }
+            input = inputSet;
+            KurtiKombinacijasRankiniuBudu(0);
+        }
+        private int KurtiKombinacijasRankiniuBudu(int nr)
+        {
+            if (uzbaigti == true)
+            {
+                return 0;
+            }
+            else
+            {
+                if (nr != input.Count - 1)
+                {
+                    for (int i = 0; i < input[nr] + 1; i++)
+                    {
+                        DabartinesInputReiksmes[nr] = i;
+                        KurtiKombinacijasRankiniuBudu(nr + 1);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < input[nr] + 1; i++)
+                    {
+                        DabartinesInputReiksmes[nr] = i;
+                        TikrintiArGerasSprendimas();
+                        if (TikrintiArGerasSprendimas() == true)
+                        {
+                            int detaliusuma = 0;
+                            for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                            {
+                                detaliusuma += DabartinesInputReiksmes[j];
+                            }
+                            if (detaliusuma > GeriausioDetaliuSkaicius)
+                            {
+                                GeriausiaReiksme = new List<int> { };
+                                for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                                {
+                                    GeriausiaReiksme.Add(DabartinesInputReiksmes[j]);
+                                }
+                                GeriausioDetaliuSkaicius = detaliusuma;
+                                GeriausioLiekanos = new List<int> { };
+                                for (int j = 0; j < Liekanos.Count; j++)
+                                {
+                                    GeriausioLiekanos.Add(Liekanos[j]);
+                                }
+                                SukurtuSkaicius = GeriausioDetaliuSkaicius;
+                                worker.ReportProgress(DabartinesInputReiksmes[0]);
+                            }
+                        }
+                        else
+                        {
+                            i = input[nr] + 2;
+                        }
                     }
                 }
             }
-            for (int i = 0; i < max + 1; i++)
+            return 0;
+        }
+        private Boolean TikrintiArGerasSprendimas()
+        {
+            List<int> viso = new List<int> { };
+            for (int i = 0; i < problem.kiekis.Count; i++)
             {
-                inputSet.Add(i);
+                viso.Add(problem.kiekis[i]);
             }
-            Combinations<int> combinations = new Combinations<int>(inputSet, subsabl.SablonoSubNr.Count, GenerateOption.WithRepetition);
-            //rekursiveKurimas(0, SablonoNr, parketoRusis);
+            for (int i = 0; i < DabartinesInputReiksmes.Count; i++)
+            {
+                for (int j = 0; j < subsabl.SablonoElem[i].JuostIlgis.Count; j++)
+                {
+                    for (int h = 0; h < problem.kiekis.Count; h++)
+                    {
+                        if (subsabl.SablonoElem[i].JuostIlgis[j] == problem.ilgis[h] && subsabl.SablonoElem[i].JuostTipas[j] == problem.tipai[h])
+                        {
+                            viso[h] -= subsabl.SablonoElem[i].Kiekis[j] * DabartinesInputReiksmes[i];
+                        }
+                    }
+                }
+            }
+            Boolean arMinusas = false;
+            Liekanos = new List<int> { };
+            for (int i = 0; i < viso.Count; i++)
+            {
+                Liekanos.Add(viso[i]);
+                if (viso[i] < 0)
+                {
+                    arMinusas = true;
+                }
+            }
+            if (arMinusas == false)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        private void ParuostiSpausdinimui()
+        {
+            RandomiserClass random = new RandomiserClass();
+            random.sablonas = subsabl;
+            for (int i = 0; i < GeriausiaReiksme.Count; i++)
+            {
+                random.kiekis.Add(GeriausiaReiksme[i]);
+            }
+            int suma = 0;
+            for (int i = 0; i < problem.ilgis.Count; i++)
+            {
+                random.ilgis.Add(problem.ilgis[i]);
+                random.tipas.Add(problem.tipai[i]);
+                random.suma.Add(GeriausioLiekanos[i]);
+                suma += GeriausioLiekanos[i];
+            }
+            random.liekana = suma;
+            random.pagamintaDetaliu = GeriausioDetaliuSkaicius;
+            RandomList.random.Add(random);
         }
         private void button2_Click(object sender, EventArgs e)
         {
