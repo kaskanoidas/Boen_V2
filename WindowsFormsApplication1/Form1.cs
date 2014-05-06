@@ -616,7 +616,7 @@ namespace WindowsFormsApplication1
             GeriausioDetaliuSkaicius = 0;
             List<int> inputSet = new List<int> { };
             DabartinesInputReiksmes = new List<int> { };
-            int max = 0;//int min = 99999;//int max = 0;
+            int max = 0;
             for (int i = 0; i < subsabl.SablonoSubNr.Count; i++)
             {
                 for (int j = 0; j < subsabl.SablonoElem[i].Kiekis.Count; j++)
@@ -632,16 +632,17 @@ namespace WindowsFormsApplication1
                             }
                         }
                     }
-                    if (max < kiek)//if(min > kiek && kiek > 0)//if (max < kiek)
+                    if (max < kiek)
                     {
-                       max = kiek; //min = kiek;//max = kiek;
+                       max = kiek;
                     }
                 }
-                inputSet.Add(max);//inputSet.Add(min);//inputSet.Add(max);
+                inputSet.Add(max);
                 DabartinesInputReiksmes.Add(0);
             }
             input = inputSet;
             KurtiKombinacijasRankiniuBudu(0);
+            //KurtiKombinacijasMaxBudu(0);
         }
         private int KurtiKombinacijasRankiniuBudu(int nr)
         {
@@ -664,7 +665,6 @@ namespace WindowsFormsApplication1
                     for (int i = 0; i < input[nr] + 1; i++)
                     {
                         DabartinesInputReiksmes[nr] = i;
-                        TikrintiArGerasSprendimas();
                         if (TikrintiArGerasSprendimas() == true)
                         {
                             int detaliusuma = 0;
@@ -692,6 +692,139 @@ namespace WindowsFormsApplication1
                         else
                         {
                             i = input[nr] + 2;
+                        }
+                    }
+                    worker.ReportProgress(DabartinesInputReiksmes[0]);
+                }
+            }
+            return 0;
+        }
+        private int KurtiKombinacijasMaxBudu(int nr)
+        {
+            if (uzbaigti == true)
+            {
+                return 0;
+            }
+            else
+            {
+                if (nr != input.Count - 1)
+                {
+                    for (int i = 0; i < input[nr] + 1; i++)
+                    {
+                        DabartinesInputReiksmes[nr] = i;
+                        KurtiKombinacijasRankiniuBudu(nr + 1);
+                    }
+                }
+                else
+                {
+                    DabartinesInputReiksmes[nr] = input[nr] + 1;
+                    if (TikrintiArGerasSprendimas() == true)
+                    {
+                        int detaliusuma = 0;
+                        for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                        {
+                            detaliusuma += DabartinesInputReiksmes[j];
+                        }
+                        if (detaliusuma > GeriausioDetaliuSkaicius)
+                        {
+                            GeriausiaReiksme = new List<int> { };
+                            for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                            {
+                                GeriausiaReiksme.Add(DabartinesInputReiksmes[j]);
+                            }
+                            GeriausioDetaliuSkaicius = detaliusuma;
+                            GeriausioLiekanos = new List<int> { };
+                            for (int j = 0; j < Liekanos.Count; j++)
+                            {
+                                GeriausioLiekanos.Add(Liekanos[j]);
+                            }
+                            SukurtuSkaicius = GeriausioDetaliuSkaicius;
+                            worker.ReportProgress(DabartinesInputReiksmes[0]);
+                        }
+                    }
+                    else
+                    {
+                        DabartinesInputReiksmes[nr] = 0;
+                        if (TikrintiArGerasSprendimas() == true)
+                        {
+                            int detaliusuma = 0;
+                            for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                            {
+                                detaliusuma += DabartinesInputReiksmes[j];
+                            }
+                            if (detaliusuma > GeriausioDetaliuSkaicius)
+                            {
+                                GeriausiaReiksme = new List<int> { };
+                                for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                                {
+                                    GeriausiaReiksme.Add(DabartinesInputReiksmes[j]);
+                                }
+                                GeriausioDetaliuSkaicius = detaliusuma;
+                                GeriausioLiekanos = new List<int> { };
+                                for (int j = 0; j < Liekanos.Count; j++)
+                                {
+                                    GeriausioLiekanos.Add(Liekanos[j]);
+                                }
+                                SukurtuSkaicius = GeriausioDetaliuSkaicius;
+                                worker.ReportProgress(DabartinesInputReiksmes[0]);
+                            }
+                        }
+                    }
+                    for (int i = 0; i < input[nr] + 1; i++)
+                    {
+                        DabartinesInputReiksmes[nr] = i;
+                        if (TikrintiArGerasSprendimas() == true)
+                        {
+                            int detaliusuma = 0;
+                            for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                            {
+                                detaliusuma += DabartinesInputReiksmes[j];
+                            }
+                            if (detaliusuma > GeriausioDetaliuSkaicius)
+                            {
+                                GeriausiaReiksme = new List<int> { };
+                                for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                                {
+                                    GeriausiaReiksme.Add(DabartinesInputReiksmes[j]);
+                                }
+                                GeriausioDetaliuSkaicius = detaliusuma;
+                                GeriausioLiekanos = new List<int> { };
+                                for (int j = 0; j < Liekanos.Count; j++)
+                                {
+                                    GeriausioLiekanos.Add(Liekanos[j]);
+                                }
+                                SukurtuSkaicius = GeriausioDetaliuSkaicius;
+                                worker.ReportProgress(DabartinesInputReiksmes[0]);
+                            }
+                        }
+                        else
+                        {
+                            DabartinesInputReiksmes[nr] = 0;
+                            if (TikrintiArGerasSprendimas() == true)
+                            {
+                                int detaliusuma = 0;
+                                for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                                {
+                                    detaliusuma += DabartinesInputReiksmes[j];
+                                }
+                                if (detaliusuma > GeriausioDetaliuSkaicius)
+                                {
+                                    GeriausiaReiksme = new List<int> { };
+                                    for (int j = 0; j < DabartinesInputReiksmes.Count; j++)
+                                    {
+                                        GeriausiaReiksme.Add(DabartinesInputReiksmes[j]);
+                                    }
+                                    GeriausioDetaliuSkaicius = detaliusuma;
+                                    GeriausioLiekanos = new List<int> { };
+                                    for (int j = 0; j < Liekanos.Count; j++)
+                                    {
+                                        GeriausioLiekanos.Add(Liekanos[j]);
+                                    }
+                                    SukurtuSkaicius = GeriausioDetaliuSkaicius;
+                                    worker.ReportProgress(DabartinesInputReiksmes[0]);
+                                }
+                            }
+                            i = -1;
                         }
                     }
                 }
