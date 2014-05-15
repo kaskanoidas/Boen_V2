@@ -597,8 +597,10 @@ namespace WindowsFormsApplication1
         {
             worker = sender as BackgroundWorker;
             LygciuSudarimas();
-            Simplex();
-            ParuostiSpausdinimui();
+            RandomList = new RandomElements();
+            SimplexTree(Lentele); // su medziu
+            Testing(1);
+            //Simplex(Lentele); // be medzio
             ;
         }
         private void bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -675,65 +677,203 @@ namespace WindowsFormsApplication1
             Lentele.eilutes.Add(eil);
             LenteleBack.eilutes.Add(eil2);
         }
-        private void Simplex() // jeigu randa su vienodais 1 = 1 = 1 ... sukurti su kiekvienu atskira saka.
-        {                       // blogi sprendimai, nes limitas kiek lygciu... del to atsilieka nuo EVo nes jis naudoja visus. + bug su neigemais.
-            RandomList = new RandomElements();
-            while (CheckArGalimaTestiSprendima() == true)
+        private void SimplexTree(SimplexLentele Lent)
+        {
+            if (CheckArGalimaTestiSprendima(Lent) == true)
             {
-                int MaxCj = RastiMaxCj();
-                Tuple<int, double> back = RastiMinRHS(MaxCj);
+                SimplexTreeCj(Lent);
+            }
+        }
+        private void SimplexTreeCj(SimplexLentele Lent)
+        {
+            double max = 0;
+            SimplexLentele LenteleMedziui = new SimplexLentele();
+            for (int i = 0; i < Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes.Count; i++)
+            {
+                if (max < Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i])
+                {
+                    max = Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i];
+                }
+            }
+            for (int i = 0; i < Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes.Count; i++)
+            {
+                if (max == Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i])
+                {
+                    LenteleMedziui = MakeLentelesCopy(Lent);
+                    SimplexTreeMinRHS(i, LenteleMedziui);
+                    LenteleMedziui = new SimplexLentele();
+                }
+            }
+        }
+        private void SimplexTreeMinRHS(int MaxCj, SimplexLentele Lent)
+        {
+            double min = Lent.RHS[0];
+            double tikrinti = 0;
+            SimplexLentele LenteleMedziui = new SimplexLentele();
+            for (int i = 0; i < Lent.eilutes.Count - 1; i++)
+            {
+                tikrinti = Lent.RHS[i] / Lent.eilutes[i].eilutesReiksmes[MaxCj];
+                if (tikrinti < min && tikrinti > 0) // FIXED?
+                {
+                    min = tikrinti;
+                }
+            }
+            for (int i = 0; i < Lent.eilutes.Count - 1; i++)
+            {
+                tikrinti = Lent.RHS[i] / Lent.eilutes[i].eilutesReiksmes[MaxCj];
+                if (tikrinti == min)
+                {
+                    LenteleMedziui = MakeLentelesCopy(Lent);
+                    SimplexTreeTransformation(MaxCj, Tuple.Create(i, min), LenteleMedziui);
+                    LenteleMedziui = new SimplexLentele();
+                }
+            }
+        }
+        private void SimplexTreeTransformation(int MaxCj, Tuple<int, double> back, SimplexLentele Lent)
+        {
+            int MinRHS = back.Item1;
+            int MinRHSReiksme = Convert.ToInt32(Math.Floor(back.Item2));
+            Lent.BVS[MinRHS] = MaxCj;
+            PertvarkytiPagrindineEilute(MinRHS, MaxCj, ref Lent);
+            PertvarkytiLikusesEilutes(MinRHS, MaxCj, ref Lent);
+            PertvarkytiPagrindiniStulpeli(MinRHS, MaxCj, ref Lent);
+            SimplexTreeRHSCount(MinRHS, MaxCj, MinRHSReiksme, ref Lent);
+        }
+        private void SimplexTreeRHSCount(int MinRHS, int MaxCj, int MinRHSReiksme, ref SimplexLentele Lent)
+        {
+            List<int> Likutis = new List<int> { };
+            Lent.RHS[MinRHS] = MinRHSReiksme;
+            for (int i = 0; i < LenteleBack.eilutes.Count - 1; i++)
+            {
+                Likutis.Add(LenteleBack.RHS[i] - MinRHSReiksme * Convert.ToInt32(LenteleBack.eilutes[i].eilutesReiksmes[MaxCj]));
+            }
+            List<int> iList = new List<int> { };
+            for (int i = 0; i < Likutis.Count; i++)
+            {
+                if (i != MinRHS && Lent.BVS[i] >= 0)
+                {
+                    iList.Add(i);
+                }
+            }
+            Permutations<int> variantai = new Permutations<int>(iList, GenerateOption.WithoutRepetition);
+            foreach (IList<int> v in variantai)
+            {
+                List<int> LikutisMedziui = new List<int> { };
+                LikutisMedziui.AddRange(Likutis);
+                SimplexLentele LenteleMedziui = new SimplexLentele();
+                LenteleMedziui = MakeLentelesCopy(Lent);
+                for (int i = 0; i < v.Count; i++)
+                {
+                    double min = Convert.ToDouble(LikutisMedziui[v[i]]);
+                    for (int j = 0; j < LenteleBack.eilutes.Count - 1; j++)
+                    {
+                        if(LenteleBack.eilutes[j].eilutesReiksmes[LenteleMedziui.BVS[v[i]]] > 0)
+                        {
+                            double kiekdalinti = Convert.ToDouble(LikutisMedziui[j]) / LenteleBack.eilutes[j].eilutesReiksmes[LenteleMedziui.BVS[v[i]]];
+                            if (kiekdalinti < min)
+                            {
+                                min = kiekdalinti;
+                            }
+                        }
+                    }
+                    LenteleMedziui.RHS[v[i]] = Convert.ToInt32(Math.Floor(min));
+                    // atimti is likuciu
+                    for (int j = 0; j < LikutisMedziui.Count; j++)
+                    {
+                        LikutisMedziui[j] -= LenteleMedziui.RHS[v[i]] * Convert.ToInt32(LenteleBack.eilutes[j].eilutesReiksmes[Lent.BVS[v[i]]]); //?
+                    }
+                }
+                for (int i = 0; i < LikutisMedziui.Count; i++)
+                {
+                    if (i != MinRHS)
+                    {
+                        if (LenteleMedziui.BVS[i] < 0)
+                        {
+                            LenteleMedziui.RHS[i] = LikutisMedziui[i];
+                        }
+                    }
+                }
+                ParuostiSpausdinimui(LenteleMedziui, LikutisMedziui);
+                SimplexTree(LenteleMedziui);// sukti cikla?
+                LenteleMedziui = new SimplexLentele();
+                LikutisMedziui = new List<int> { };
+            }
+        }
+        //-------------------------------------------BE MEDZIO -----------------------------------------
+        private void Simplex(SimplexLentele Lentele) 
+        {
+            SimplexLentele Lent = new SimplexLentele();
+            Lent = MakeLentelesCopy(Lentele);
+            while (CheckArGalimaTestiSprendima(Lent) == true)
+            {
+                int MaxCj = RastiMaxCj(Lent);
+                Tuple<int, double> back = RastiMinRHS(MaxCj, Lent);
                 int MinRHS = back.Item1;
                 int MinRHSReiksme = Convert.ToInt32(Math.Floor(back.Item2));
-                Lentele.BVS[MinRHS] = MaxCj;
-                PertvarkytiPagrindineEilute(MinRHS, MaxCj);
-                PertvarkytiLikusesEilutes(MinRHS, MaxCj);
-                PertvarkytiPagrindiniStulpeli(MinRHS, MaxCj);
-                PerskaiciuotiRHS(MinRHS, MaxCj, MinRHSReiksme);
-                ParuostiSpausdinimui();
+                Lent.BVS[MinRHS] = MaxCj;
+                PertvarkytiPagrindineEilute(MinRHS, MaxCj, ref Lent);
+                PertvarkytiLikusesEilutes(MinRHS, MaxCj, ref Lent);
+                PertvarkytiPagrindiniStulpeli(MinRHS, MaxCj, ref Lent);
+                PerskaiciuotiRHS(MinRHS, MaxCj, MinRHSReiksme, ref Lent);
+                ParuostiSpausdinimui(Lent, Likuciai);
             }
             Testing(1);
             ;
         }
-        private Boolean CheckArGalimaTestiSprendima()
+        private SimplexLentele MakeLentelesCopy(SimplexLentele Lent)
         {
-            for (int i = 0; i < Lentele.RHS.Count; i++)
+            SimplexLentele nauja = new SimplexLentele();
+            eilute eil = new eilute();
+            nauja.BVS.AddRange(Lent.BVS);
+            for (int i = 0; i < Lent.eilutes.Count; i++)
             {
-                if (Lentele.RHS[i] < 0)
+                eil = new eilute();
+                eil.eilutesReiksmes.AddRange(Lent.eilutes[i].eilutesReiksmes);
+                nauja.eilutes.Add(eil);
+            }
+            nauja.RHS.AddRange(Lent.RHS);
+            return nauja;
+        }
+        private Boolean CheckArGalimaTestiSprendima(SimplexLentele Lent)
+        {
+            for (int i = 0; i < Lent.RHS.Count; i++)
+            {
+                if (Lent.RHS[i] < 0)
                 {
                     return false;
                 }
             }
-            for (int i = 0; i < Lentele.eilutes[Lentele.eilutes.Count - 1].eilutesReiksmes.Count; i++)
+            for (int i = 0; i < Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes.Count; i++)
             {
-                if (Lentele.eilutes[Lentele.eilutes.Count - 1].eilutesReiksmes[i] > 0)
+                if (Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i] > 0)
                 {
                     return true;
                 }
             }
             return false;
         }
-        private int RastiMaxCj()
+        private int RastiMaxCj(SimplexLentele Lent)
         {
             double max = 0;
             int mx = 0;
-            for (int i = 0; i < Lentele.eilutes[Lentele.eilutes.Count - 1].eilutesReiksmes.Count; i++)
+            for (int i = 0; i < Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes.Count; i++)
             {
-                if (max < Lentele.eilutes[Lentele.eilutes.Count - 1].eilutesReiksmes[i])
+                if (max < Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i])
                 {
-                    max = Lentele.eilutes[Lentele.eilutes.Count - 1].eilutesReiksmes[i];
+                    max = Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i];
                     mx = i;
                 }
             }
             return mx;
         }
-        private Tuple<int,double> RastiMinRHS(int MaxCj)
+        private Tuple<int, double> RastiMinRHS(int MaxCj, SimplexLentele Lent)
         {
-            double min = Lentele.RHS[0];
+            double min = Lent.RHS[0];
             int mn = 0;
             double tikrinti = 0;
-            for (int i = 0; i < Lentele.eilutes.Count - 1; i++)
+            for (int i = 0; i < Lent.eilutes.Count - 1; i++)
             {
-                tikrinti = Lentele.RHS[i] / Lentele.eilutes[i].eilutesReiksmes[MaxCj];
+                tikrinti = Lent.RHS[i] / Lent.eilutes[i].eilutesReiksmes[MaxCj];
                 if (tikrinti < min && tikrinti > 0) // FIXED?
                 {
                     min = tikrinti;
@@ -742,76 +882,76 @@ namespace WindowsFormsApplication1
             }
             return Tuple.Create(mn, min);
         }
-        private void PertvarkytiPagrindineEilute(int MinRHS, int MaxCj)
+        private void PertvarkytiPagrindineEilute(int MinRHS, int MaxCj, ref SimplexLentele Lent)
         {
-            double IsKoDalinti = Lentele.eilutes[MinRHS].eilutesReiksmes[MaxCj];
-            for (int i = 0; i < Lentele.eilutes[MinRHS].eilutesReiksmes.Count; i++)
+            double IsKoDalinti = Lent.eilutes[MinRHS].eilutesReiksmes[MaxCj];
+            for (int i = 0; i < Lent.eilutes[MinRHS].eilutesReiksmes.Count; i++)
             {
-                double beta = Lentele.eilutes[MinRHS].eilutesReiksmes[i] / IsKoDalinti;
-                Lentele.eilutes[MinRHS].eilutesReiksmes[i] = Math.Round(beta, 10); // ?
+                double beta = Lent.eilutes[MinRHS].eilutesReiksmes[i] / IsKoDalinti;
+                Lent.eilutes[MinRHS].eilutesReiksmes[i] = Math.Round(beta, 10); // ?
             }
         }
-        private void PertvarkytiLikusesEilutes(int MinRHS, int MaxCj)
+        private void PertvarkytiLikusesEilutes(int MinRHS, int MaxCj, ref SimplexLentele Lent)
         {
-            for (int i = 0; i < Lentele.eilutes.Count; i++)
+            for (int i = 0; i < Lent.eilutes.Count; i++)
             {
                 if (i != MinRHS)
                 {
-                    for (int j = 0; j < Lentele.eilutes[i].eilutesReiksmes.Count; j++)
+                    for (int j = 0; j < Lent.eilutes[i].eilutesReiksmes.Count; j++)
                     {
                         if (j != MaxCj)
                         {
-                            double beta = Lentele.eilutes[i].eilutesReiksmes[j] - Lentele.eilutes[i].eilutesReiksmes[MaxCj] * Lentele.eilutes[MinRHS].eilutesReiksmes[j];
+                            double beta = Lent.eilutes[i].eilutesReiksmes[j] - Lent.eilutes[i].eilutesReiksmes[MaxCj] * Lent.eilutes[MinRHS].eilutesReiksmes[j];
                             //if (beta < 0)
                             //{
                             //    beta = 0;
                             //}
-                            Lentele.eilutes[i].eilutesReiksmes[j] = Math.Round(beta,10); // ?
+                            Lent.eilutes[i].eilutesReiksmes[j] = Math.Round(beta, 10);
                         }
                     }
                 }
             }
         }
-        private void PertvarkytiPagrindiniStulpeli(int MinRHS, int MaxCj)
+        private void PertvarkytiPagrindiniStulpeli(int MinRHS, int MaxCj, ref SimplexLentele Lent)
         {
-            for (int i = 0; i < Lentele.eilutes.Count; i++)
+            for (int i = 0; i < Lent.eilutes.Count; i++)
             {
                 if (i != MinRHS)
                 {
-                    Lentele.eilutes[i].eilutesReiksmes[MaxCj] = 0;
+                    Lent.eilutes[i].eilutesReiksmes[MaxCj] = 0;
                 }
             }
         }
-        private void PerskaiciuotiRHS(int MinRHS, int MaxCj, int MinRHSReiksme) // TEST
+        private void PerskaiciuotiRHS(int MinRHS, int MaxCj, int MinRHSReiksme, ref SimplexLentele Lent) // TEST
         {
             Likuciai = new List<int> { };
-            Lentele.RHS[MinRHS] = MinRHSReiksme;
-            for (int i = 0; i < LenteleBack.eilutes.Count - 1; i++)//for(int i = 0; i < Lygtys.Lygtis.Count; i++)
+            Lent.RHS[MinRHS] = MinRHSReiksme;
+            for (int i = 0; i < LenteleBack.eilutes.Count - 1; i++)
             {
-                int likutis = LenteleBack.RHS[i] - MinRHSReiksme * Convert.ToInt32(LenteleBack.eilutes[i].eilutesReiksmes[MaxCj]); //int likutis = Lygtys.Lygtis[i].LygtiesSprendinys - MinRHSReiksme * Lygtys.Lygtis[i].kiekis[MaxCj]; // netinka nes kinta lygties skaiciai, daryti kopija pirmo ir tada issispres
+                int likutis = LenteleBack.RHS[i] - MinRHSReiksme * Convert.ToInt32(LenteleBack.eilutes[i].eilutesReiksmes[MaxCj]);
                 Likuciai.Add(likutis);
             }
             for (int i = 0; i < Likuciai.Count; i++)
             {
                 if (i != MinRHS)
                 {
-                    if (Lentele.BVS[i] >= 0)
+                    if (Lent.BVS[i] >= 0)
                     {
                         // rasti minimuma is kiek galima dalinti.
                         double min = Convert.ToDouble(Likuciai[i]);
-                        for (int j = 0; j < LenteleBack.eilutes.Count - 1; j++)//for (int j = 0; j < Lygtys.Lygtis.Count; j++)
+                        for (int j = 0; j < LenteleBack.eilutes.Count - 1; j++)
                         {
-                            double kiekdalinti = Convert.ToDouble(Likuciai[j]) / LenteleBack.eilutes[j].eilutesReiksmes[Lentele.BVS[i]];//double kiekdalinti = Convert.ToDouble(Likuciai[j]) / Convert.ToDouble(Lygtys.Lygtis[j].kiekis[Lentele.BVS[i]]);
+                            double kiekdalinti = Convert.ToDouble(Likuciai[j]) / LenteleBack.eilutes[j].eilutesReiksmes[Lent.BVS[i]];
                             if (kiekdalinti < min)
                             {
                                 min = kiekdalinti;
                             }
                         }
-                        Lentele.RHS[i] = Convert.ToInt32(Math.Floor(min));
+                        Lent.RHS[i] = Convert.ToInt32(Math.Floor(min));
                         // atimti is likuciu
                         for (int j = 0; j < Likuciai.Count; j++)
                         {
-                            Likuciai[j] -= Lentele.RHS[i] * Convert.ToInt32(LenteleBack.eilutes[j].eilutesReiksmes[Lentele.BVS[i]]); //?
+                            Likuciai[j] -= Lent.RHS[i] * Convert.ToInt32(LenteleBack.eilutes[j].eilutesReiksmes[Lent.BVS[i]]); //?
                         }
                     }
                 }
@@ -821,15 +961,14 @@ namespace WindowsFormsApplication1
             {
                 if (i != MinRHS)
                 {
-                    if (Lentele.BVS[i] < 0)
+                    if (Lent.BVS[i] < 0)
                     {
-                        Lentele.RHS[i] = Likuciai[i];
-                        //Likuciai[i] = 0;
+                        Lent.RHS[i] = Likuciai[i];
                     }
                 }
             }
         }
-        private void ParuostiSpausdinimui()
+        private void ParuostiSpausdinimui(SimplexLentele Lent, List<int> Likutis)
         { 
             RandomiserClass Randomiser = new RandomiserClass();
             Randomiser.sablonas = subsabl;
@@ -838,18 +977,18 @@ namespace WindowsFormsApplication1
                 Randomiser.kiekis.Add(0);
             }
             int dabartinis = 0;
-            for (int i = 0; i < Lentele.RHS.Count; i++)
+            for (int i = 0; i < Lent.RHS.Count; i++)
             {
-                if (Lentele.BVS[i] >= 0)
+                if (Lent.BVS[i] >= 0)
                 {
-                    dabartinis += Lentele.RHS[i];
-                    Randomiser.kiekis[Lentele.BVS[i]] = Lentele.RHS[i];
+                    dabartinis += Lent.RHS[i];
+                    Randomiser.kiekis[Lent.BVS[i]] = Lent.RHS[i];
                 }
             }
-            Randomiser.suma.AddRange(Likuciai);
-            for(int i = 0; i < Likuciai.Count; i++)
+            Randomiser.suma.AddRange(Likutis);
+            for (int i = 0; i < Likutis.Count; i++)
             {
-                Randomiser.liekana += Likuciai[i];
+                Randomiser.liekana += Likutis[i];
             }
             Randomiser.ilgis.AddRange(problem.ilgis);
             Randomiser.tipas.AddRange(problem.tipai);
