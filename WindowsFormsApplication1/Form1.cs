@@ -598,7 +598,7 @@ namespace WindowsFormsApplication1
             worker = sender as BackgroundWorker;
             LygciuSudarimas();
             RandomList = new RandomElements();
-            SimplexTree(Lentele); // su medziu
+            SimplexTree(ref Lentele); // su medziu
             Testing(1);
             //Simplex(Lentele); // be medzio
             ;
@@ -677,14 +677,14 @@ namespace WindowsFormsApplication1
             Lentele.eilutes.Add(eil);
             LenteleBack.eilutes.Add(eil2);
         }
-        private void SimplexTree(SimplexLentele Lent)
+        private void SimplexTree(ref SimplexLentele Lent)
         {
-            if (CheckArGalimaTestiSprendima(Lent) == true)
+            if (CheckArGalimaTestiSprendima(ref Lent) == true)
             {
-                SimplexTreeCj(Lent);
+                SimplexTreeCj(ref Lent);
             }
         }
-        private void SimplexTreeCj(SimplexLentele Lent)
+        private void SimplexTreeCj(ref SimplexLentele Lent)
         {
             double max = 0;
             SimplexLentele LenteleMedziui = new SimplexLentele();
@@ -700,12 +700,11 @@ namespace WindowsFormsApplication1
                 if (max == Lent.eilutes[Lent.eilutes.Count - 1].eilutesReiksmes[i])
                 {
                     LenteleMedziui = MakeLentelesCopy(Lent);
-                    SimplexTreeMinRHS(i, LenteleMedziui);
-                    LenteleMedziui = new SimplexLentele();
+                    SimplexTreeMinRHS(i, ref LenteleMedziui);
                 }
             }
         }
-        private void SimplexTreeMinRHS(int MaxCj, SimplexLentele Lent)
+        private void SimplexTreeMinRHS(int MaxCj, ref SimplexLentele Lent)
         {
             double min = Lent.RHS[0];
             double tikrinti = 0;
@@ -724,12 +723,11 @@ namespace WindowsFormsApplication1
                 if (tikrinti == min)
                 {
                     LenteleMedziui = MakeLentelesCopy(Lent);
-                    SimplexTreeTransformation(MaxCj, Tuple.Create(i, min), LenteleMedziui);
-                    LenteleMedziui = new SimplexLentele();
+                    SimplexTreeTransformation(MaxCj, Tuple.Create(i, min), ref LenteleMedziui);
                 }
             }
         }
-        private void SimplexTreeTransformation(int MaxCj, Tuple<int, double> back, SimplexLentele Lent)
+        private void SimplexTreeTransformation(int MaxCj, Tuple<int, double> back, ref SimplexLentele Lent)
         {
             int MinRHS = back.Item1;
             int MinRHSReiksme = Convert.ToInt32(Math.Floor(back.Item2));
@@ -756,11 +754,12 @@ namespace WindowsFormsApplication1
                 }
             }
             Permutations<int> variantai = new Permutations<int>(iList, GenerateOption.WithoutRepetition);
+            SimplexLentele LenteleMedziui = new SimplexLentele();
+            List<int> LikutisMedziui = new List<int> { };
             foreach (IList<int> v in variantai)
             {
-                List<int> LikutisMedziui = new List<int> { };
+                LikutisMedziui.Clear();
                 LikutisMedziui.AddRange(Likutis);
-                SimplexLentele LenteleMedziui = new SimplexLentele();
                 LenteleMedziui = MakeLentelesCopy(Lent);
                 for (int i = 0; i < v.Count; i++)
                 {
@@ -794,9 +793,7 @@ namespace WindowsFormsApplication1
                     }
                 }
                 ParuostiSpausdinimui(LenteleMedziui, LikutisMedziui);
-                SimplexTree(LenteleMedziui);// sukti cikla?
-                LenteleMedziui = new SimplexLentele();
-                LikutisMedziui = new List<int> { };
+                SimplexTree(ref LenteleMedziui);// sukti cikla?
             }
         }
         //-------------------------------------------BE MEDZIO -----------------------------------------
@@ -804,7 +801,7 @@ namespace WindowsFormsApplication1
         {
             SimplexLentele Lent = new SimplexLentele();
             Lent = MakeLentelesCopy(Lentele);
-            while (CheckArGalimaTestiSprendima(Lent) == true)
+            while (CheckArGalimaTestiSprendima(ref Lent) == true)
             {
                 int MaxCj = RastiMaxCj(Lent);
                 Tuple<int, double> back = RastiMinRHS(MaxCj, Lent);
@@ -834,7 +831,7 @@ namespace WindowsFormsApplication1
             nauja.RHS.AddRange(Lent.RHS);
             return nauja;
         }
-        private Boolean CheckArGalimaTestiSprendima(SimplexLentele Lent)
+        private Boolean CheckArGalimaTestiSprendima(ref SimplexLentele Lent)
         {
             for (int i = 0; i < Lent.RHS.Count; i++)
             {
