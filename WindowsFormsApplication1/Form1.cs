@@ -37,7 +37,6 @@ namespace WindowsFormsApplication1
         LygciuSistema Lygtys = new LygciuSistema();
         SimplexLentele Lentele = new SimplexLentele();
         SimplexLentele LenteleBack = new SimplexLentele();
-        List<int> Likuciai = new List<int> { };
         // Pradinių duomenų gavimas ir apdorojimas:
         public Form1()
         {
@@ -837,7 +836,7 @@ namespace WindowsFormsApplication1
                 }
             }
         }
-        private void PerskaiciuotiRHS(int MinRHS, int MaxCj, int MinRHSReiksme, ref SimplexLentele Lent, ref List<int> Likuciai) // BUGGGGG!!!!!!!!!!!!!
+        private void PerskaiciuotiRHS(int MinRHS, int MaxCj, int MinRHSReiksme, ref SimplexLentele Lent, ref List<int> Likuciai)
         {
             Lent.RHS[MinRHS] = MinRHSReiksme;
             for (int i = 0; i < LenteleBack.eilutes.Count - 1; i++)
